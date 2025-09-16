@@ -204,6 +204,27 @@ async def get_dashboard_analytics():
         "recent_products": [clean_mongo_doc(doc) for doc in recent_products_raw]
     }
 
+# --- DATABASE AND APP SETUP ---
+ROOT_DIR = Path(__file__).parent
+load_dotenv(ROOT_DIR / '.env')
+mongo_url = os.environ['MONGO_URL']
+client = AsyncIOMotorClient(mongo_url)
+db = client[os.environ['DB_NAME']]
+
+app = FastAPI()
+api_router = APIRouter(prefix="/api")
+
+# --- ROOT ENDPOINT ---
+@app.get("/")
+async def root():
+    return {"message": "HerBlock API is running 🚀"}
+
+# --- HEALTH CHECK ENDPOINT ---
+@app.get("/healthz")
+async def healthz():
+    return {"status": "ok"}
+
+
 # --- APP CONFIGURATION ---
 app.include_router(api_router)
 origins = ["http://localhost:3000"]
