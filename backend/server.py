@@ -203,19 +203,15 @@ async def get_dashboard_analytics():
         "recent_collections": [clean_mongo_doc(doc) for doc in recent_collections_raw],
         "recent_products": [clean_mongo_doc(doc) for doc in recent_products_raw]
     }
-# --- APP CONFIGURATION (MODIFIED) ---
+
+# --- APP CONFIGURATION ---
 app.include_router(api_router)
-
-# This is the list of websites allowed to talk to our backend.
-origins = [
-    "http://localhost:3000",  # For local development
-    os.environ.get("FRONTEND_URL") # For the live deployed frontend
-]
-
+origins = ["http://localhost:3000"]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins, # Use the dynamic origins list
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
