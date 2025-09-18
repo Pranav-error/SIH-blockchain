@@ -14,6 +14,11 @@ import json
 import qrcode
 import io
 import base64
+from fastapi import Request
+from requests_oauthlib import OAuth2Session
+from google.oauth2 import id_token
+from google.auth.transport import requests as google_requests
+
 
 # --- NEW IMPORTS FOR AUTHENTICATION ---
 from passlib.context import CryptContext
@@ -35,6 +40,57 @@ client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 app = FastAPI()
 api_router = APIRouter(prefix="/api")
+
+# --- Add these new variables after your app setup ---
+GOOGLE_CLIENT_ID = os.environ['GOOGLE_CLIENT_ID']
+GOOGLE_CLIENT_SECRET = os.environ['GOOGLE_CLIENT_SECRET']
+REDIRECT_URI = f"{os.environ.get('RENDER_EXTERNAL_URL', 'http://127.0.0.1:8000')}/api/auth/callback"
+AUTHORIZATION_URL = "https://accounts.google.com/o/oauth2/v2/auth"
+TOKEN_URL = "https://www.googleapis.com/oauth2/v4/token"
+SCOPE = ["openid", "https://www.googleapis.com/auth/userinfo.email", "https://www.googleapis.com/auth/userinfo.profile"]
+
+auth_router = APIRouter(prefix="/api/auth", tags=["Authentication"])
+
+@auth_router.get("/login")
+async def google_login():
+    google = OAuth2Session(GOOGLE_CLIENT_ID, redirect_uri=REDIRECT_URI, scope=SCOPE)
+    authorization_url, state = google.authorization_url(AUTHORIZATION_URL, access_type="offline", prompt="select_account")
+    return {"authorization_url": authorization_url}
+
+@auth_router.post("/callback")
+async def google_callback(request: Request):
+    body = await request.json()
+    code = body.get("code")
+
+    google = OAuth2Session(GOOGLE_CLIENT_ID, redirect_uri=REDIRECT_URI)
+    try:
+        token = google.fetch_token(TOKEN_URL, client_secret=GOOGLE_CLIENT_SECRET, code=code)
+        id_info = id_token.verify_oauth2_token(token['id_token'], google_requests.Request(), GOOGLE_CLIENT_ID)
+
+        user_email = id_info['email']
+
+        # Check if user exists
+        user = await db.users.find_one({"username": user_email})
+        if not user:
+            # Create a new user if they don't exist
+            # For social logins, we can create a dummy hashed_password or adapt the model
+            new_user = UserInDB(
+                username=user_email,
+                organization="Default Org",
+                hashed_password=get_password_hash(str(uuid.uuid4())) # Secure random password
+            )
+            await db.users.insert_one(new_user.dict())
+            user = await db.users.find_one({"username": user_email})
+
+        # Create an access token for our own API
+        access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        access_token = create_access_token(
+            data={"sub": user["username"]}, expires_delta=access_token_expires
+        )
+        return {"access_token": access_token, "token_type": "bearer"}
+
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Invalid credentials or token. Error: {str(e)}")
 
 # --- MODELS (USER AND DATA) ---
 class User(BaseModel):
@@ -208,6 +264,8 @@ async def get_dashboard_analytics():
 
 # --- APP CONFIGURATION ---
 app.include_router(api_router)
+app.include_router(auth_router)
+# CORS configuration
 origins = ["http://localhost:3000"]
 app.add_middleware(
     CORSMiddleware,

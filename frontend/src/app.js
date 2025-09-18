@@ -4,6 +4,8 @@ import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { BrowserRouter, Link, Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import "./app.css";
 
+// --- NEW ---
+
 // Component Imports
 import { toast, Toaster } from "sonner";
 import { Badge } from "./components/badge";
@@ -14,12 +16,11 @@ import { Input } from "./components/input";
 import { Label } from "./components/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./components/select";
 import { Textarea } from "./components/textarea";
-
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
-// --- AUTHENTICATION SETUP ---
-const AuthContext = createContext(null);
+// --- AUTHENTICATION SETUP (No changes here) ---
+export const AuthContext = createContext(null); // Export AuthContext
 
 const AuthProvider = ({ children }) => {
     const [token, setToken] = useState(localStorage.getItem("herblock_token"));
@@ -43,7 +44,7 @@ const ProtectedRoute = ({ children }) => {
     return children;
 };
 
-// --- MAP COMPONENTS & HOOKS ---
+// --- MAP COMPONENTS & HOOKS (No changes here) ---
 const useLeaflet = () => {
   useEffect(() => {
     if (document.getElementById('leaflet-css')) return;
@@ -89,22 +90,50 @@ const DisplayMap = ({ lat, lng }) => {
   return <div ref={mapContainerRef} style={{ height: '150px', width: '100%', borderRadius: '8px', marginTop: '8px' }}></div>;
 };
 
-// --- AUTHENTICATION PAGES ---
+// --- AUTHENTICATION PAGES (LoginPage is modified) ---
 const LoginPage = () => {
     const navigate = useNavigate(); const { setToken } = useContext(AuthContext);
     const [username, setUsername] = useState(''); const [password, setPassword] = useState(''); const [error, setError] = useState('');
     const handleSubmit = async (e) => { e.preventDefault(); setError(''); try { const formData = new URLSearchParams(); formData.append('username', username); formData.append('password', password); const response = await axios.post(`${API}/token`, formData); setToken(response.data.access_token); navigate('/dashboard'); } catch (err) { setError('Invalid username or password.'); } };
-    return ( <div className="min-h-screen flex items-center justify-center bg-gray-100"><Card className="w-full max-w-sm"><CardHeader><CardTitle>Login</CardTitle><CardDescription>Enter credentials to access the dashboard.</CardDescription></CardHeader><CardContent><form onSubmit={handleSubmit} className="space-y-4"><div><Label htmlFor="username">Username</Label><Input id="username" value={username} onChange={e => setUsername(e.target.value)} required /></div><div><Label htmlFor="password">Password</Label><Input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} required /></div>{error && <p className="text-sm text-red-600">{error}</p>}<Button type="submit" className="w-full">Sign In</Button><p className="text-center text-sm text-gray-600">No account? <Link to="/register" className="font-medium text-emerald-600 hover:underline">Register here</Link></p></form></CardContent></Card></div> );
+
+    // --- NEW ---
+    // Function to handle the Google Login button click
+    const handleGoogleLogin = async () => {
+        try {
+            const res = await axios.get(`${API}/auth/login`);
+            // Redirect the user to the authorization URL provided by the backend
+            window.location.href = res.data.authorization_url;
+        } catch (err) {
+            setError("Could not connect to Google services. Please try again later.");
+        }
+    };
+
+    return ( <div className="min-h-screen flex items-center justify-center bg-gray-100"><Card className="w-full max-w-sm"><CardHeader><CardTitle>Login</CardTitle><CardDescription>Enter credentials to access the dashboard.</CardDescription></CardHeader><CardContent><form onSubmit={handleSubmit} className="space-y-4"><div><Label htmlFor="username">Username</Label><Input id="username" value={username} onChange={e => setUsername(e.target.value)} required /></div><div><Label htmlFor="password">Password</Label><Input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} required /></div>{error && <p className="text-sm text-red-600">{error}</p>}<Button type="submit" className="w-full">Sign In</Button>
+    
+    {/* --- NEW --- */}
+    {/* Separator and Google Login Button */}
+    <div className="relative my-2">
+        <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
+        <div className="relative flex justify-center text-xs uppercase"><span className="bg-card px-2 text-muted-foreground">Or continue with</span></div>
+    </div>
+    <Button variant="outline" type="button" className="w-full" onClick={handleGoogleLogin}>
+        <svg className="mr-2 h-4 w-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512"><path fill="currentColor" d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 126 21.2 172.9 56.5l-63.1 61.9C333.5 99.4 293.1 80 248 80c-82.8 0-150.5 67.7-150.5 152s67.7 152 150.5 152c99.9 0 127.9-81.5 133.7-118.2H248v-85.3h236.1c2.3 12.7 3.9 26.9 3.9 41.4z"></path></svg>
+        Login with Google
+    </Button>
+    
+    <p className="text-center text-sm text-gray-600">No account? <Link to="/register" className="font-medium text-emerald-600 hover:underline">Register here</Link></p></form></CardContent></Card></div> );
 };
 
 const RegisterPage = () => {
+    // No changes to RegisterPage
     const navigate = useNavigate();
     const [username, setUsername] = useState(''); const [password, setPassword] = useState(''); const [error, setError] = useState('');
     const handleSubmit = async (e) => { e.preventDefault(); setError(''); try { const formData = new URLSearchParams(); formData.append('username', username); formData.append('password', password); await axios.post(`${API}/register`, formData); toast.success("Registration successful! Please log in."); navigate('/login'); } catch (err) { setError(err.response?.data?.detail || 'Registration failed.'); } };
     return ( <div className="min-h-screen flex items-center justify-center bg-gray-100"><Card className="w-full max-w-sm"><CardHeader><CardTitle>Register</CardTitle><CardDescription>Create a new account to get started.</CardDescription></CardHeader><CardContent><form onSubmit={handleSubmit} className="space-y-4"><div><Label htmlFor="username">Username</Label><Input id="username" value={username} onChange={e => setUsername(e.target.value)} required /></div><div><Label htmlFor="password">Password</Label><Input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} required /></div>{error && <p className="text-sm text-red-600">{error}</p>}<Button type="submit" className="w-full">Create Account</Button><p className="text-center text-sm text-gray-600">Already have an account? <Link to="/login" className="font-medium text-emerald-600 hover:underline">Login here</Link></p></form></CardContent></Card></div> );
 };
 
-// --- CORE APPLICATION PAGES & DIALOGS ---
+
+// --- CORE APPLICATION PAGES & DIALOGS (No changes from here down) ---
 const HeroSection = () => {
     const [qrInput, setQrInput] = useState(""); const [isScanning, setIsScanning] = useState(false);
     const handleQRScan = () => { if (!qrInput.trim()) { toast.error("Please enter a product ID or QR code"); return; } const productId = qrInput.includes('/trace/') ? qrInput.split('/trace/')[1] : qrInput; window.location.href = `/trace/${productId}`; };
@@ -136,12 +165,10 @@ const Dashboard = () => {
             <div className="max-w-7xl mx-auto">
                 <div className="flex justify-between items-center mb-8">
                     <div><h1 className="text-3xl font-bold text-gray-900 mb-2">HerBlock Dashboard</h1><p className="text-gray-600">Monitor your Ayurvedic herb supply chain</p></div>
-                    {/* --- MODIFICATION START --- */}
                     <div className="flex items-center gap-4">
                         <Button onClick={() => navigate('/')} variant="ghost"><Home className="w-4 h-4 mr-2" />Home</Button>
                         <Button onClick={handleLogout} variant="outline"><LogOut className="w-4 h-4 mr-2" />Logout</Button>
                     </div>
-                    {/* --- MODIFICATION END --- */}
                 </div>
                 {analytics && (<div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8"><Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-gray-600">Total Products</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold text-emerald-600">{analytics.statistics.total_products}</div></CardContent></Card><Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-gray-600">Collections</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold text-blue-600">{analytics.statistics.total_collections}</div></CardContent></Card><Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-gray-600">Processing Steps</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold text-purple-600">{analytics.statistics.total_processing}</div></CardContent></Card><Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-gray-600">Quality Tests</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold text-orange-600">{analytics.statistics.total_quality_tests}</div></CardContent></Card><Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-gray-600">Blockchain Txs</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold text-teal-600">{analytics.statistics.total_blockchain_transactions}</div></CardContent></Card></div>)}
                 <div className="grid md:grid-cols-4 gap-4 mb-8">
@@ -178,7 +205,7 @@ const AddQualityTestDialog = ({ onSuccess }) => {
 const AddProductDialog = ({ onSuccess }) => {
     const [open, setOpen] = useState(false); const [formData, setFormData] = useState({ product_name: '', batch_id: '', species_name: 'Ashwagandha', manufacturer: '', final_quantity_kg: '' });
     const handleSubmit = async (e) => { e.preventDefault(); try { await axios.post(`${API}/product`, { ...formData, manufacturing_date: new Date().toISOString(), expiry_date: new Date(Date.now() + 2 * 365 * 24 * 60 * 60 * 1000).toISOString(), final_quantity_kg: parseFloat(formData.final_quantity_kg), certifications: ['Organic', 'GMP'] }); toast.success("Product created!"); setOpen(false); if(onSuccess) onSuccess(); } catch (error) { toast.error("Failed to create product"); } };
-    return ( <Dialog open={open} onOpenChange={setOpen}><DialogTrigger asChild><Button className="h-20 flex-col gap-2 bg-purple-600 hover:bg-purple-700"><Plus className="w-6 h-6" />Add Product</Button></DialogTrigger><DialogContent className="max-w-md"><DialogHeader><DialogTitle>Add New Product</DialogTitle><DialogDescription>Create final formulated product</DialogDescription></DialogHeader><form onSubmit={handleSubmit} className="space-y-4"><div><Label htmlFor="product_name">Product Name</Label><Input id="product_name" value={formData.product_name} onChange={(e) => setFormData({...formData, product_name: e.target.value})} required /></div><div><Label htmlFor="batch_id">Batch ID</Label><Input id="batch_id" value={formData.batch_id} onChange={(e) => setFormData({...formData, batch_id: e.target.value})} required /></div><div><Label htmlFor="species_name">Primary Species</Label><Select value={formData.species_name} onValueChange={(v) => setFormData({...formData, species_name: v})}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Ashwagandha">Ashwagandha</SelectItem><SelectItem value="Turmeric">Turmeric</SelectItem><SelectItem value="Tulsi">Tulsi</SelectItem></SelectContent></Select></div><div><Label htmlFor="manufacturer">Manufacturer</Label><Input id="manufacturer" value={formData.manufacturer} onChange={(e) => setFormData({...formData, manufacturer: e.target.value})} required /></div><div><Label htmlFor="final_quantity_kg">Final Quantity (kg)</Label><Input id="final_quantity_kg" type="number" step="0.1" value={formData.final_quantity_kg} onChange={(e) => setFormData({...formData, final_quantity_kg: e.target.value})} required /></div><Button type="submit" className="w-full">Create Product</Button></form></DialogContent></Dialog> );
+    return ( <Dialog open={open} onOpenChange={setOpen}><DialogTrigger asChild><Button className="h-20 flex-col gap-2 bg-purple-600 hover:bg-purple-700"><Plus className="w-6 h-6" />Add Product</Button></DialogTrigger><DialogContent className="max-w-md"><DialogHeader><DialogTitle>Add New Product</DialogTitle><DialogDescription>Create final formulated product</DialogDescription></DialogHeader><form onSubmit={handleSubmit} className="space-y-4"><div><Label htmlFor="product_name">Product Name</Label><Input id="product_name" value={formData.product_name} onChange={(e) => setFormData({...formData, product_name: e.target.value})} required /></div><div><Label htmlFor="batch_id">Batch ID</Label><Input id="batch_id" value={formData.batch_id} onChange={(e) => setFormData({...formData, batch_id: e.target.value})} required /></div><div><Label htmlFor="species_name">Primary Species</Label><Select value={formData.species_name} onValueChange={(v) => setFormData({...formData, species_name: v})}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Ashwagandha">Ashwagandha</SelectItem><SelectItem value="Turmeric">Turmeric</SelectItem><SelectItem value="Tulsi">Tulsi</SelectItem></SelectContent></Select></div><div><Label htmlFor="manufacturer">Manufacturer</Label><Input id="manufacturer" value={formData.manufacturer} onChange={(e) => setFormData({...formData, manufacturer: e.g.value})} required /></div><div><Label htmlFor="final_quantity_kg">Final Quantity (kg)</Label><Input id="final_quantity_kg" type="number" step="0.1" value={formData.final_quantity_kg} onChange={(e) => setFormData({...formData, final_quantity_kg: e.target.value})} required /></div><Button type="submit" className="w-full">Create Product</Button></form></DialogContent></Dialog> );
 };
 
 const TraceProduct = ({ productId }) => {
@@ -228,4 +255,3 @@ function App() {
 }
 
 export default App;
-
