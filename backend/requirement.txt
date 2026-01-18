@@ -69,3 +69,5 @@ uvicorn==0.25.0
 watchfiles==1.1.0
 python-jose[cryptography]
 passlib[bcrypt]
+google-auth==2.29.0
+google-auth-oauthlib==1.2.0

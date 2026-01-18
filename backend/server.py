@@ -124,9 +124,15 @@ class BlockchainTransaction(BaseModel):
 
 # --- AUTHENTICATION HELPER FUNCTIONS ---
 def verify_password(plain_password, hashed_password):
+    # Ensure password is properly encoded and within bcrypt limits
+    if isinstance(plain_password, str):
+        plain_password = plain_password.encode('utf-8')[:72]
     return pwd_context.verify(plain_password, hashed_password)
 
 def get_password_hash(password):
+    # Ensure password is properly encoded and within bcrypt limits
+    if isinstance(password, str):
+        password = password.encode('utf-8')[:72]
     return pwd_context.hash(password)
 
 async def get_user(username: str):
@@ -266,7 +272,12 @@ async def get_dashboard_analytics():
 app.include_router(api_router)
 app.include_router(auth_router)
 # CORS configuration
-origins = ["http://localhost:3000"]
+origins = [
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:3001",
+]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
