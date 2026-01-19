@@ -1,0 +1,56 @@
+{
+  "expo": {
+    "name": "HerBlock Collector",
+    "slug": "herblock-collector",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#10B981"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.herblock.collector",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "HerBlock needs your location to record herb collection points for blockchain verification.",
+        "NSLocationAlwaysUsageDescription": "HerBlock needs your location to record herb collection points even when the app is in background.",
+        "NSCameraUsageDescription": "HerBlock needs camera access to capture photos of collected herbs."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#10B981"
+      },
+      "package": "com.herblock.collector",
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-location",
+      "expo-camera",
+      "expo-image-picker",
+      [
+        "expo-sqlite",
+        {
+          "enableFTS": true
+        }
+      ]
+    ],
+    "extra": {
+      "apiUrl": "https://your-backend-url.com/api"
+    }
+  }
+}

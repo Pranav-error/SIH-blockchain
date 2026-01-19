@@ -1,14 +1,14 @@
 import axios from "axios";
 import { BarChart3, FlaskConical, Home, Leaf, LogOut, MapPin, Plus, QrCode, Shield, Users } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { BrowserRouter, Link, Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import "./app.css";
 
-// --- NEW ---
-
 // Component Imports
 import { toast, Toaster } from "sonner";
 import { Badge } from "./components/badge";
+import { BlockchainCollection, BlockchainStatus, PatentFeatureBadge } from "./components/BlockchainStatus";
 import { Button } from "./components/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./components/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "./components/dialog";
@@ -137,7 +137,7 @@ const RegisterPage = () => {
 const HeroSection = () => {
     const [qrInput, setQrInput] = useState(""); const [isScanning, setIsScanning] = useState(false);
     const handleQRScan = () => { if (!qrInput.trim()) { toast.error("Please enter a product ID or QR code"); return; } const productId = qrInput.includes('/trace/') ? qrInput.split('/trace/')[1] : qrInput; window.location.href = `/trace/${productId}`; };
-    return ( <div className="relative min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-green-100 flex items-center justify-center overflow-hidden"><div className="absolute inset-0 opacity-10"><div className="absolute top-10 left-10 w-64 h-64 bg-emerald-200 rounded-full blur-3xl"></div><div className="absolute bottom-10 right-10 w-80 h-80 bg-teal-200 rounded-full blur-3xl"></div><div className="absolute top-1/2 left-1/2 w-96 h-96 bg-green-200 rounded-full blur-3xl transform -translate-x-1/2 -translate-y-1/2"></div></div><div className="relative z-10 max-w-6xl mx-auto px-6 py-12 text-center"><div className="mb-8"><Badge className="mb-4 px-4 py-2 bg-emerald-100 text-emerald-800 border-emerald-200"><Leaf className="w-4 h-4 mr-2" />Smart India Hackathon 2024</Badge><h1 className="text-5xl md:text-7xl font-bold bg-gradient-to-r from-emerald-600 via-teal-600 to-green-600 bg-clip-text text-transparent mb-6 leading-tight">HerBlock</h1><p className="text-xl md:text-2xl text-gray-700 mb-4 max-w-4xl mx-auto font-medium">Blockchain-Powered Ayurvedic Herb Traceability System</p><p className="text-lg text-gray-600 mb-8 max-w-3xl mx-auto">Track your Ayurvedic herbs from farm to formulation with immutable blockchain technology. Ensure authenticity, quality, and sustainable sourcing with complete transparency.</p></div><div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-8 mb-12 max-w-2xl mx-auto"><div className="flex items-center justify-center mb-6"><QrCode className="w-16 h-16 text-emerald-600 mr-4" /><div className="text-left"><h3 className="text-2xl font-bold text-gray-800">Scan & Trace</h3><p className="text-gray-600">Enter QR code or Product ID to trace your herb's journey</p></div></div><div className="flex gap-4 mb-4"><Input placeholder="Enter QR code URL or Product ID..." value={qrInput} onChange={(e) => setQrInput(e.target.value)} className="flex-1 h-12 text-lg border-emerald-200 focus:border-emerald-500" onKeyPress={(e) => e.key === 'Enter' && handleQRScan()} /><Button onClick={handleQRScan} disabled={isScanning} className="h-12 px-8 bg-emerald-600 hover:bg-emerald-700 text-white">{isScanning ? "Scanning..." : "Trace"}</Button></div><p className="text-sm text-gray-500">Try demo ID: <code className="bg-gray-100 px-2 py-1 rounded text-emerald-600">ASH-MP-2025-01</code></p></div><div className="flex flex-col sm:flex-row gap-4 justify-center"><Button size="lg" className="h-14 px-8 bg-emerald-600 hover:bg-emerald-700 text-white text-lg" onClick={() => window.location.href = '/dashboard'}><BarChart3 className="w-5 h-5 mr-2" />View Dashboard</Button></div></div></div> );
+    return ( <div className="relative min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-green-100 flex items-center justify-center overflow-hidden"><div className="absolute inset-0 opacity-10"><div className="absolute top-10 left-10 w-64 h-64 bg-emerald-200 rounded-full blur-3xl"></div><div className="absolute bottom-10 right-10 w-80 h-80 bg-teal-200 rounded-full blur-3xl"></div><div className="absolute top-1/2 left-1/2 w-96 h-96 bg-green-200 rounded-full blur-3xl transform -translate-x-1/2 -translate-y-1/2"></div></div><div className="relative z-10 max-w-6xl mx-auto px-6 py-12 text-center"><div className="mb-8"><Badge className="mb-4 px-4 py-2 bg-emerald-100 text-emerald-800 border-emerald-200"><Leaf className="w-4 h-4 mr-2" />Smart India Hackathon 2024</Badge><h1 className="text-5xl md:text-7xl font-bold bg-gradient-to-r from-emerald-600 via-teal-600 to-green-600 bg-clip-text text-transparent mb-6 leading-tight">HerBlock</h1><p className="text-xl md:text-2xl text-gray-700 mb-4 max-w-4xl mx-auto font-medium">Blockchain-Powered Ayurvedic Herb Traceability System</p><p className="text-lg text-gray-600 mb-4 max-w-3xl mx-auto">Track your Ayurvedic herbs from farm to formulation with immutable <strong>Hyperledger Fabric</strong> blockchain technology. Ensure authenticity, quality, and sustainable sourcing with complete transparency.</p><div className="flex justify-center mb-6"><PatentFeatureBadge /></div></div><div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-8 mb-12 max-w-2xl mx-auto"><div className="flex items-center justify-center mb-6"><QrCode className="w-16 h-16 text-emerald-600 mr-4" /><div className="text-left"><h3 className="text-2xl font-bold text-gray-800">Scan & Trace</h3><p className="text-gray-600">Enter QR code or Product ID to trace your herb's journey</p></div></div><div className="flex gap-4 mb-4"><Input placeholder="Enter QR code URL or Product ID..." value={qrInput} onChange={(e) => setQrInput(e.target.value)} className="flex-1 h-12 text-lg border-emerald-200 focus:border-emerald-500" onKeyPress={(e) => e.key === 'Enter' && handleQRScan()} /><Button onClick={handleQRScan} disabled={isScanning} className="h-12 px-8 bg-emerald-600 hover:bg-emerald-700 text-white">{isScanning ? "Scanning..." : "Trace"}</Button></div><p className="text-sm text-gray-500">Try: <code className="bg-gray-100 px-2 py-1 rounded text-emerald-600 cursor-pointer hover:bg-emerald-100" onClick={() => { setQrInput('ASHWA-TRACE-001'); }}>ASHWA-TRACE-001</code> (blockchain verified product)</p></div><div className="flex flex-col sm:flex-row gap-4 justify-center"><Button size="lg" className="h-14 px-8 bg-emerald-600 hover:bg-emerald-700 text-white text-lg" onClick={() => window.location.href = '/dashboard'}><BarChart3 className="w-5 h-5 mr-2" />View Dashboard</Button></div></div></div> );
 };
 
 const Dashboard = () => {
@@ -164,12 +164,22 @@ const Dashboard = () => {
         <div className="min-h-screen bg-gray-50 p-6">
             <div className="max-w-7xl mx-auto">
                 <div className="flex justify-between items-center mb-8">
-                    <div><h1 className="text-3xl font-bold text-gray-900 mb-2">HerBlock Dashboard</h1><p className="text-gray-600">Monitor your Ayurvedic herb supply chain</p></div>
+                    <div>
+                        <h1 className="text-3xl font-bold text-gray-900 mb-2">HerBlock Dashboard</h1>
+                        <p className="text-gray-600">Monitor your Ayurvedic herb supply chain</p>
+                        <PatentFeatureBadge />
+                    </div>
                     <div className="flex items-center gap-4">
                         <Button onClick={() => navigate('/')} variant="ghost"><Home className="w-4 h-4 mr-2" />Home</Button>
                         <Button onClick={handleLogout} variant="outline"><LogOut className="w-4 h-4 mr-2" />Logout</Button>
                     </div>
                 </div>
+                
+                {/* Blockchain Status Card */}
+                <div className="mb-6">
+                    <BlockchainStatus />
+                </div>
+                
                 {analytics && (<div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8"><Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-gray-600">Total Products</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold text-emerald-600">{analytics.statistics.total_products}</div></CardContent></Card><Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-gray-600">Collections</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold text-blue-600">{analytics.statistics.total_collections}</div></CardContent></Card><Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-gray-600">Processing Steps</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold text-purple-600">{analytics.statistics.total_processing}</div></CardContent></Card><Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-gray-600">Quality Tests</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold text-orange-600">{analytics.statistics.total_quality_tests}</div></CardContent></Card><Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-gray-600">Blockchain Txs</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold text-teal-600">{analytics.statistics.total_blockchain_transactions}</div></CardContent></Card></div>)}
                 <div className="grid md:grid-cols-4 gap-4 mb-8">
                     <AddCollectionDialog onSuccess={fetchAnalytics} />
@@ -177,7 +187,29 @@ const Dashboard = () => {
                     <AddQualityTestDialog onSuccess={fetchAnalytics} />
                     <AddProductDialog onSuccess={fetchAnalytics} />
                 </div>
-                <div className="grid md:grid-cols-2 gap-8"><Card><CardHeader><CardTitle>Recent Collections</CardTitle><CardDescription>Latest herb collection events</CardDescription></CardHeader><CardContent>{analytics?.recent_collections?.length > 0 ? (<div className="space-y-4">{analytics.recent_collections.map((collection) => (<div key={collection.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"><div><p className="font-medium">{collection.species_name}</p><p className="text-sm text-gray-600">{collection.collector_name}</p><p className="text-xs text-gray-500">{collection.location_name}</p></div><Badge variant="outline">{collection.quality_grade}</Badge></div>))}</div>) : (<p className="text-gray-500 text-center py-8">No collections yet</p>)}</CardContent></Card><Card><CardHeader><CardTitle>Recent Products</CardTitle><CardDescription>Latest formulated products</CardDescription></CardHeader><CardContent>{analytics?.recent_products?.length > 0 ? (<div className="space-y-4">{analytics.recent_products.map((product) => (<div key={product.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"><div><p className="font-medium">{product.product_name}</p><p className="text-sm text-gray-600">{product.manufacturer}</p><p className="text-xs text-gray-500">Batch: {product.batch_id}</p></div><Button size="sm" variant="outline" onClick={() => window.location.href=`/trace/${product.batch_id}`}><QrCode className="w-4 h-4" /></Button></div>))}</div>) : (<p className="text-gray-500 text-center py-8">No products yet</p>)}</CardContent></Card></div>
+                <div className="grid md:grid-cols-2 gap-8">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <Shield className="w-5 h-5 text-emerald-600" />
+                                Recent Collections
+                            </CardTitle>
+                            <CardDescription>Latest herb collection events (blockchain verified)</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            {analytics?.recent_collections?.length > 0 ? (
+                                <div className="space-y-3">
+                                    {analytics.recent_collections.map((collection, idx) => (
+                                        <BlockchainCollection key={collection.id || idx} collection={collection} />
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="text-gray-500 text-center py-8">No collections yet</p>
+                            )}
+                        </CardContent>
+                    </Card>
+                    <Card><CardHeader><CardTitle>Recent Products</CardTitle><CardDescription>Latest formulated products</CardDescription></CardHeader><CardContent>{analytics?.recent_products?.length > 0 ? (<div className="space-y-4">{analytics.recent_products.map((product) => (<div key={product.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"><div><p className="font-medium">{product.product_name}</p><p className="text-sm text-gray-600">{product.manufacturer}</p><p className="text-xs text-gray-500">Batch: {product.batch_id}</p></div><Button size="sm" variant="outline" onClick={() => window.location.href=`/trace/${product.batch_id}`}><QrCode className="w-4 h-4" /></Button></div>))}</div>) : (<p className="text-gray-500 text-center py-8">No products yet</p>)}</CardContent></Card>
+                </div>
             </div>
         </div>
     );
@@ -209,22 +241,155 @@ const AddProductDialog = ({ onSuccess }) => {
 };
 
 const TraceProduct = ({ productId }) => {
-  const [traceData, setTraceData] = useState(null); const [loading, setLoading] = useState(true);
-  useEffect(() => { const fetchTraceData = async () => { try { const response = await axios.get(`${API}/trace/${productId}`); setTraceData(response.data); } catch (error) { toast.error("Product not found"); } finally { setLoading(false); } }; fetchTraceData(); }, [productId]);
-  if (loading) return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="text-center"><QrCode className="w-16 h-16 text-emerald-600 mx-auto mb-4 animate-pulse" /><p className="text-gray-600">Loading...</p></div></div>;
-  if (!traceData) return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="text-center"><p className="text-red-600 text-xl mb-4">Product not found</p><Button onClick={() => window.location.href = '/'}><Home className="w-4 h-4 mr-2" />Go Home</Button></div></div>;
+  const [traceData, setTraceData] = useState(null); const [loading, setLoading] = useState(true); const [error, setError] = useState(null);
+  useEffect(() => { const fetchTraceData = async () => { try { const response = await axios.get(`${API}/blockchain/trace/${productId}`); setTraceData(response.data); } catch (error) { console.error("Trace error:", error); setError(productId.startsWith('COLL-') ? 'collection' : productId.startsWith('PROC-') ? 'processing' : productId.startsWith('QT-') ? 'quality_test' : 'not_found'); toast.error("Product not found"); } finally { setLoading(false); } }; fetchTraceData(); }, [productId]);
+  if (loading) return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="text-center"><QrCode className="w-16 h-16 text-emerald-600 mx-auto mb-4 animate-pulse" /><p className="text-gray-600">Loading blockchain data...</p></div></div>;
+  if (!traceData || !traceData.product) return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="text-center max-w-md p-8 bg-white rounded-2xl shadow-lg">
+        <QrCode className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+        <p className="text-red-600 text-xl mb-2 font-semibold">Product Not Found</p>
+        {error === 'collection' && <p className="text-gray-600 mb-4">You entered a <strong>Collection ID</strong> ({productId}). Please enter a <strong>Product ID</strong> instead (e.g., ASHWA-TRACE-001).</p>}
+        {error === 'processing' && <p className="text-gray-600 mb-4">You entered a <strong>Processing ID</strong> ({productId}). Please enter a <strong>Product ID</strong> instead (e.g., ASHWA-TRACE-001).</p>}
+        {error === 'quality_test' && <p className="text-gray-600 mb-4">You entered a <strong>Quality Test ID</strong> ({productId}). Please enter a <strong>Product ID</strong> instead (e.g., ASHWA-TRACE-001).</p>}
+        {error === 'not_found' && <p className="text-gray-600 mb-4">No product found with ID: <code className="bg-gray-100 px-2 py-1 rounded">{productId}</code></p>}
+        <div className="bg-emerald-50 p-4 rounded-lg mb-4">
+          <p className="text-sm text-emerald-800 font-medium">💡 Try this verified product:</p>
+          <Button variant="outline" className="mt-2 border-emerald-500 text-emerald-600 hover:bg-emerald-50" onClick={() => window.location.href = '/trace/ASHWA-TRACE-001'}>
+            Trace ASHWA-TRACE-001
+          </Button>
+        </div>
+        <Button onClick={() => window.location.href = '/'}><Home className="w-4 h-4 mr-2" />Go Home</Button>
+      </div>
+    </div>
+  );
+  
+  // Map blockchain data to display format
+  const product = traceData.product || {};
+  const collections = traceData.collections || [];
+  const processing = traceData.processing || [];
+  const qualityTests = traceData.quality_tests || [];
+  
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-teal-50 p-6">
       <div className="max-w-6xl mx-auto">
-        <div className="mb-8 text-center"><Badge className="mb-4 px-4 py-2 bg-emerald-100 text-emerald-800"><Shield className="w-4 h-4 mr-2" />Blockchain Verified</Badge><h1 className="text-4xl font-bold text-gray-900 mb-2">{traceData.product.product_name}</h1><p className="text-gray-600">Complete herb traceability journey</p></div>
+        <div className="mb-8 text-center">
+          <Badge className="mb-4 px-4 py-2 bg-emerald-100 text-emerald-800"><Shield className="w-4 h-4 mr-2" />Blockchain Verified</Badge>
+          {traceData.patent_pending && <Badge className="mb-4 ml-2 px-4 py-2 bg-amber-100 text-amber-800">🔬 Patent Pending Technology</Badge>}
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">{product.product_name || product.product_name_hindi || 'Product'}</h1>
+          <p className="text-gray-600">Complete herb traceability journey • {traceData.total_events} blockchain events</p>
+        </div>
         <div className="grid md:grid-cols-3 gap-8">
-          <Card className="md:col-span-2 bg-white/80 backdrop-blur-sm"><CardHeader><CardTitle className="flex items-center gap-2"><Leaf className="w-6 h-6 text-emerald-600" />Product Information</CardTitle></CardHeader><CardContent><div className="grid md:grid-cols-2 gap-6"><div><p className="text-sm text-gray-600">Batch ID</p><p className="font-semibold">{traceData.product.batch_id}</p></div><div><p className="text-sm text-gray-600">Species</p><p className="font-semibold">{traceData.product.species_name}</p></div><div><p className="text-sm text-gray-600">Manufacturer</p><p className="font-semibold">{traceData.product.manufacturer}</p></div><div><p className="text-sm text-gray-600">Manufacturing Date</p><p className="font-semibold">{new Date(traceData.product.manufacturing_date).toLocaleDateString()}</p></div><div><p className="text-sm text-gray-600">Quantity</p><p className="font-semibold">{traceData.product.final_quantity_kg} kg</p></div><div><p className="text-sm text-gray-600">Certifications</p><div className="flex gap-2 mt-1">{traceData.product.certifications.map((cert) => (<Badge key={cert} variant="outline">{cert}</Badge>))}</div></div></div></CardContent></Card>
-          <Card className="bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center p-6"><CardHeader className="p-0 mb-4"><CardTitle className="text-lg">Product QR Code</CardTitle></CardHeader><CardContent className="p-0 text-center">{traceData.product.qr_code_image ? (<img src={`data:image/png;base64,${traceData.product.qr_code_image}`} alt="Product QR Code" className="w-48 h-48 rounded-lg shadow-md"/>) : (<div className="w-48 h-48 bg-gray-100 flex items-center justify-center text-gray-500 text-sm rounded-lg">QR Code not available</div>)}<p className="text-xs text-gray-600 mt-4">Scan to verify.</p></CardContent></Card>
+          <Card className="md:col-span-2 bg-white/80 backdrop-blur-sm">
+            <CardHeader><CardTitle className="flex items-center gap-2"><Leaf className="w-6 h-6 text-emerald-600" />Product Information</CardTitle></CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-2 gap-6">
+                <div><p className="text-sm text-gray-600">Product ID</p><p className="font-semibold font-mono text-sm">{product.id}</p></div>
+                <div><p className="text-sm text-gray-600">Batch Number</p><p className="font-semibold">{product.batch_number}</p></div>
+                <div><p className="text-sm text-gray-600">Manufacturer</p><p className="font-semibold">{product.manufacturer_name}</p></div>
+                <div><p className="text-sm text-gray-600">Manufacturing Date</p><p className="font-semibold">{product.manufacturing_date ? new Date(product.manufacturing_date).toLocaleDateString() : 'N/A'}</p></div>
+                <div><p className="text-sm text-gray-600">Expiry Date</p><p className="font-semibold">{product.expiry_date ? new Date(product.expiry_date).toLocaleDateString() : 'N/A'}</p></div>
+                <div><p className="text-sm text-gray-600">MRP</p><p className="font-semibold">₹{product.mrp}</p></div>
+                <div><p className="text-sm text-gray-600">AYUSH License</p><p className="font-semibold">{product.ayush_license}</p></div>
+                <div><p className="text-sm text-gray-600">FSSAI License</p><p className="font-semibold">{product.fssai_license}</p></div>
+                <div className="md:col-span-2"><p className="text-sm text-gray-600">Ingredients</p><p className="font-semibold">{product.ingredients?.join(', ')}</p></div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center p-6">
+            <CardHeader className="p-0 mb-4"><CardTitle className="text-lg">Scan to Verify</CardTitle></CardHeader>
+            <CardContent className="p-0 text-center">
+              <div className="bg-white p-4 rounded-xl shadow-lg border-2 border-emerald-200">
+                <QRCodeSVG 
+                  value={`https://sih-blockchain.vercel.app/trace/${product.id}`}
+                  size={180}
+                  bgColor="#ffffff"
+                  fgColor="#047857"
+                  level="H"
+                  includeMargin={true}
+                  imageSettings={{
+                    src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23047857'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z'/%3E%3C/svg%3E",
+                    height: 30,
+                    width: 30,
+                    excavate: true,
+                  }}
+                />
+              </div>
+              <p className="text-xs text-emerald-600 mt-3 font-semibold">🔒 Blockchain Verified</p>
+              <p className="text-xs text-gray-500 mt-1 font-mono bg-gray-100 px-2 py-1 rounded">{product.id}</p>
+              <p className="text-xs text-gray-400 mt-2">sih-blockchain.vercel.app</p>
+            </CardContent>
+          </Card>
         </div>
         <div className="grid md:grid-cols-3 gap-8 mt-8">
-          <Card className="bg-white/80 backdrop-blur-sm"><CardHeader><CardTitle className="flex items-center gap-2"><MapPin className="w-5 h-5 text-emerald-600" />Collection Events ({traceData.collection_events.length})</CardTitle></CardHeader><CardContent><div className="space-y-4">{traceData.collection_events.map((event) => (<div key={event.id} className="p-4 bg-emerald-50 rounded-lg"><div className="flex justify-between items-start mb-2"><p className="font-semibold text-emerald-800">{event.collector_name}</p><Badge variant="outline">{event.quality_grade}</Badge></div><p className="text-sm text-gray-600 mb-1">{event.location_name}</p><p className="text-sm text-gray-600 mb-1">Quantity: {event.quantity_kg} kg</p><DisplayMap lat={event.latitude} lng={event.longitude} /><p className="text-xs text-gray-500 mt-2">{new Date(event.harvest_date).toLocaleDateString()}</p></div>))}</div></CardContent></Card>
-          <Card className="bg-white/80 backdrop-blur-sm"><CardHeader><CardTitle className="flex items-center gap-2"><Users className="w-5 h-5 text-blue-600" />Processing Steps ({traceData.processing_steps.length})</CardTitle></CardHeader><CardContent><div className="space-y-4">{traceData.processing_steps.map((step) => (<div key={step.id} className="p-4 bg-blue-50 rounded-lg"><p className="font-semibold text-blue-800">{step.process_type}</p><p className="text-sm text-gray-600 mb-1">{step.facility_name}</p><p className="text-sm text-gray-600 mb-1">Operator: {step.operator_name}</p></div>))}</div></CardContent></Card>
-          <Card className="bg-white/80 backdrop-blur-sm"><CardHeader><CardTitle className="flex items-center gap-2"><FlaskConical className="w-5 h-5 text-orange-600" />Quality Tests ({traceData.quality_tests.length})</CardTitle></CardHeader><CardContent><div className="space-y-4">{traceData.quality_tests.map((test) => (<div key={test.id} className="p-4 bg-orange-50 rounded-lg"><div className="flex justify-between items-start mb-2"><p className="font-semibold text-orange-800">{test.test_type}</p><Badge variant={test.pass_fail === 'PASS' ? 'default' : 'destructive'}>{test.pass_fail}</Badge></div><p className="text-sm text-gray-600 mb-1">{test.lab_name}</p></div>))}</div></CardContent></Card>
+          <Card className="bg-white/80 backdrop-blur-sm">
+            <CardHeader><CardTitle className="flex items-center gap-2"><MapPin className="w-5 h-5 text-emerald-600" />Collection Events ({collections.length})</CardTitle></CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {collections.map((event) => (
+                  <div key={event.id} className="p-4 bg-emerald-50 rounded-lg">
+                    <div className="flex justify-between items-start mb-2">
+                      <p className="font-semibold text-emerald-800">{event.collector_name}</p>
+                      <div className="flex gap-1">
+                        <Badge variant="outline">{event.quality_grade}</Badge>
+                        {event.geo_validated && <Badge className="bg-green-100 text-green-800">📍GPS</Badge>}
+                      </div>
+                    </div>
+                    <p className="text-sm font-medium text-emerald-700">{event.species_name}</p>
+                    <p className="text-sm text-gray-600 mb-1">{event.location_name}, {event.district}</p>
+                    <p className="text-sm text-gray-600 mb-1">Quantity: {event.quantity_kg} kg</p>
+                    <p className="text-sm text-gray-600 mb-1">{event.weather_conditions}</p>
+                    {event.organic_certified && <Badge className="bg-green-100 text-green-800 text-xs">Organic</Badge>}
+                    <DisplayMap lat={event.latitude} lng={event.longitude} />
+                    <p className="text-xs text-gray-500 mt-2">{event.harvest_date ? new Date(event.harvest_date).toLocaleString() : 'N/A'}</p>
+                  </div>
+                ))}
+                {collections.length === 0 && <p className="text-gray-500 text-center py-4">No collection events</p>}
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="bg-white/80 backdrop-blur-sm">
+            <CardHeader><CardTitle className="flex items-center gap-2"><Users className="w-5 h-5 text-blue-600" />Processing Steps ({processing.length})</CardTitle></CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {processing.map((step) => (
+                  <div key={step.id} className="p-4 bg-blue-50 rounded-lg">
+                    <p className="font-semibold text-blue-800">{step.processing_type}</p>
+                    <p className="text-sm text-gray-600 mb-1">{step.facility_name}</p>
+                    <p className="text-sm text-gray-600 mb-1">{step.facility_location}</p>
+                    <p className="text-sm text-gray-600 mb-1">Input: {step.input_quantity_kg} kg → Output: {step.output_quantity_kg} kg</p>
+                    <p className="text-sm text-gray-600 mb-1">Batch: {step.batch_number}</p>
+                    <div className="flex gap-1 mt-2">
+                      {step.gmp_certified && <Badge className="bg-blue-100 text-blue-800 text-xs">GMP</Badge>}
+                      {step.ayush_license && <Badge className="bg-purple-100 text-purple-800 text-xs">AYUSH</Badge>}
+                    </div>
+                    <p className="text-xs text-gray-500 mt-2">{step.processing_date ? new Date(step.processing_date).toLocaleString() : 'N/A'}</p>
+                  </div>
+                ))}
+                {processing.length === 0 && <p className="text-gray-500 text-center py-4">No processing steps</p>}
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="bg-white/80 backdrop-blur-sm">
+            <CardHeader><CardTitle className="flex items-center gap-2"><FlaskConical className="w-5 h-5 text-orange-600" />Quality Tests ({qualityTests.length})</CardTitle></CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {qualityTests.map((test) => (
+                  <div key={test.id} className="p-4 bg-orange-50 rounded-lg">
+                    <div className="flex justify-between items-start mb-2">
+                      <p className="font-semibold text-orange-800">{test.test_type}</p>
+                      <Badge variant={test.pass_fail === 'PASS' ? 'default' : 'destructive'} className={test.pass_fail === 'PASS' ? 'bg-green-100 text-green-800' : ''}>{test.pass_fail}</Badge>
+                    </div>
+                    <p className="text-sm text-gray-600 mb-1">{test.lab_name}</p>
+                    <p className="text-sm text-gray-600 mb-1">Result: {test.test_result}</p>
+                    <p className="text-sm text-gray-600 mb-1">Certificate: {test.certificate_number}</p>
+                    <p className="text-xs text-gray-500 mt-2">{test.test_date ? new Date(test.test_date).toLocaleString() : 'N/A'}</p>
+                  </div>
+                ))}
+                {qualityTests.length === 0 && <p className="text-gray-500 text-center py-4">No quality tests</p>}
+              </div>
+            </CardContent>
+          </Card>
         </div>
         <div className="mt-8 text-center"><Button onClick={() => window.location.href = '/'} size="lg"><Home className="w-5 h-5 mr-2" />Back to Home</Button></div>
       </div>
