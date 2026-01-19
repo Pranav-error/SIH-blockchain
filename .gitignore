@@ -1,27 +1,125 @@
-Node.js / React Frontend
+# Node.js / React Frontend
 /frontend/node_modules
 /frontend/build
 /frontend/coverage
 /frontend/.DS_Store
 /frontend/.env
+/frontend/.env.local
+/frontend/.env.production
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 package-lock.json
 
-Python / FastAPI Backend
-/backend/pycache/
+# Python / FastAPI Backend
+/backend/__pycache__/
 /backend/venv/
 /backend/.env
+/backend/.env.local
 /backend/herblock.db
 /backend/dist/
 /backend/build/
 *.pyc
 *.pyo
 *.pyd
+*.db
 
-General
+# Mobile App (React Native / Expo)
+/mobile-app/node_modules/
+/mobile-app/.expo/
+/mobile-app/.expo-shared/
+/mobile-app/dist/
+/mobile-app/npm-debug.*
+/mobile-app/yarn-error.log
+/mobile-app/.env
+/mobile-app/.env.local
+/mobile-app/package-lock.json
+
+# Expo
+.expo
+.expo-shared
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+web-build/
+
+# macOS
 .DS_Store
+.AppleDouble
+.LSOverride
+
+# Thumbnails
+._*
+
+# Files that might appear in the root of a volume
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Directories potentially created on remote AFP share
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# IDEs
 .vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+.metadata/
+bin/
+tmp/
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# OS
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Testing
+coverage/
+.nyc_output/
+*.lcov
+
+# Misc
+.cache
+.parcel-cache
+.next
+.nuxt
+.vuepress/dist
+.serverless/
+.fusebox/
+.dynamodb/
+.tern-port
+.vscode-test
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
 
 

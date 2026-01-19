@@ -1,16 +1,16 @@
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  TouchableOpacity,
-  Alert,
-  ActivityIndicator,
-} from 'react-native';
 import * as Network from 'expo-network';
-import { useSyncStore } from '../store/syncStore';
+import { useState } from 'react';
+import {
+    ActivityIndicator,
+    Alert,
+    FlatList,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from 'react-native';
 import { api } from '../services/api';
+import { useSyncStore } from '../store/syncStore';
 
 export default function PendingSyncScreen() {
   const pendingCollections = useSyncStore(state => state.pendingCollections);

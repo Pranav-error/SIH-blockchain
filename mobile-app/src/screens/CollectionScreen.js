@@ -1,19 +1,19 @@
-import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-  Alert,
-  ActivityIndicator,
-} from 'react-native';
+import { Picker } from '@react-native-picker/picker';
 import * as Location from 'expo-location';
 import * as Network from 'expo-network';
-import { Picker } from '@react-native-picker/picker';
+import { useEffect, useState } from 'react';
+import {
+    ActivityIndicator,
+    Alert,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from 'react-native';
+import { api } from '../services/api';
 import { useAuthStore } from '../store/authStore';
 import { useSyncStore } from '../store/syncStore';
-import { api } from '../services/api';
 
 // Approved species with their valid collection zones
 const SPECIES_DATA = {

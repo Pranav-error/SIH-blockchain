@@ -1,16 +1,16 @@
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { Alert } from 'react-native';
 
 // Screens
-import LoginScreen from './src/screens/LoginScreen';
-import HomeScreen from './src/screens/HomeScreen';
 import CollectionScreen from './src/screens/CollectionScreen';
-import PendingSyncScreen from './src/screens/PendingSyncScreen';
 import HistoryScreen from './src/screens/HistoryScreen';
+import HomeScreen from './src/screens/HomeScreen';
+import LoginScreen from './src/screens/LoginScreen';
+import PendingSyncScreen from './src/screens/PendingSyncScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 
 // Store

@@ -1,15 +1,14 @@
-import React from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-  Alert,
+    Alert,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
+import { db } from '../database/db';
 import { useAuthStore } from '../store/authStore';
 import { useSyncStore } from '../store/syncStore';
-import { db } from '../database/db';
 
 export default function SettingsScreen() {
   const collector = useAuthStore(state => state.collector);
