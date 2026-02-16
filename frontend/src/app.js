@@ -266,8 +266,8 @@ const TraceProduct = ({ productId }) => {
   
   // Map blockchain data to display format
   const product = traceData.product || {};
-  const collections = traceData.collections || [];
-  const processing = traceData.processing || [];
+  const collections = traceData.collection_events || traceData.collections || [];
+  const processing = traceData.processing_steps || traceData.processing || [];
   const qualityTests = traceData.quality_tests || [];
   
   return (
@@ -326,8 +326,8 @@ const TraceProduct = ({ productId }) => {
             <CardHeader><CardTitle className="flex items-center gap-2"><MapPin className="w-5 h-5 text-emerald-600" />Collection Events ({collections.length})</CardTitle></CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {collections.map((event) => (
-                  <div key={event.id} className="p-4 bg-emerald-50 rounded-lg">
+                {collections.map((event, idx) => (
+                  <div key={event.id || event.blockchain_collection_id || idx} className="p-4 bg-emerald-50 rounded-lg">
                     <div className="flex justify-between items-start mb-2">
                       <p className="font-semibold text-emerald-800">{event.collector_name}</p>
                       <div className="flex gap-1">
@@ -352,8 +352,8 @@ const TraceProduct = ({ productId }) => {
             <CardHeader><CardTitle className="flex items-center gap-2"><Users className="w-5 h-5 text-blue-600" />Processing Steps ({processing.length})</CardTitle></CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {processing.map((step) => (
-                  <div key={step.id} className="p-4 bg-blue-50 rounded-lg">
+                {processing.map((step, idx) => (
+                  <div key={step.id || step.blockchain_processing_id || idx} className="p-4 bg-blue-50 rounded-lg">
                     <p className="font-semibold text-blue-800">{step.processing_type}</p>
                     <p className="text-sm text-gray-600 mb-1">{step.facility_name}</p>
                     <p className="text-sm text-gray-600 mb-1">{step.facility_location}</p>
@@ -374,8 +374,8 @@ const TraceProduct = ({ productId }) => {
             <CardHeader><CardTitle className="flex items-center gap-2"><FlaskConical className="w-5 h-5 text-orange-600" />Quality Tests ({qualityTests.length})</CardTitle></CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {qualityTests.map((test) => (
-                  <div key={test.id} className="p-4 bg-orange-50 rounded-lg">
+                {qualityTests.map((test, idx) => (
+                  <div key={test.id || test.blockchain_test_id || idx} className="p-4 bg-orange-50 rounded-lg">
                     <div className="flex justify-between items-start mb-2">
                       <p className="font-semibold text-orange-800">{test.test_type}</p>
                       <Badge variant={test.pass_fail === 'PASS' ? 'default' : 'destructive'} className={test.pass_fail === 'PASS' ? 'bg-green-100 text-green-800' : ''}>{test.pass_fail}</Badge>

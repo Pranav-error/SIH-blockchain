@@ -173,151 +173,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
     return user
 
 # --- GENERAL HELPER FUNCTIONS ---
-
-# ============= PATENT FEATURE: HAVERSINE FORMULA =============
-import math
-
-def calculate_haversine_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
-    """
-    PATENT CLAIM 1: Haversine Formula for Geodesic Distance Calculation
-    
-    Calculates the great-circle distance between two points on Earth's surface.
-    
-    Formula: d = 2r × arcsin(√[sin²((φ₂-φ₁)/2) + cos(φ₁)×cos(φ₂)×sin²((λ₂-λ₁)/2)])
-    Where: r = 6371 km (Earth's mean radius)
-    
-    Args:
-        lat1, lon1: Coordinates of point 1 (degrees)
-        lat2, lon2: Coordinates of point 2 (degrees)
-    
-    Returns:
-        Distance in kilometers
-    """
-    R = 6371  # Earth's mean radius in kilometers
-    
-    # Convert degrees to radians
-    φ1 = math.radians(lat1)
-    φ2 = math.radians(lat2)
-    Δφ = math.radians(lat2 - lat1)
-    Δλ = math.radians(lon2 - lon1)
-    
-    # Haversine formula
-    a = math.sin(Δφ / 2) ** 2 + math.cos(φ1) * math.cos(φ2) * math.sin(Δλ / 2) ** 2
-    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
-    
-    distance = R * c
-    return round(distance, 2)
-
-
-def validate_gps_geofence(latitude: float, longitude: float, species: str) -> dict:
-    """
-    PATENT CLAIM 2: GPS Geo-fence Validation with Haversine Distance
-    
-    Validates herb collection location against approved geographic zones.
-    Uses two-level validation:
-    1. Fast bounding box check
-    2. Precise Haversine distance validation
-    
-    Returns validation result with method and distance.
-    """
-    # Species-specific geo-fence zones (matching chaincode config)
-    HERB_ZONES = {
-        "Ashwagandha": {
-            "center": (26.0, 75.0),  # Rajasthan/MP center
-            "max_radius_km": 600,
-            "bounding_box": {"minLat": 20.0, "maxLat": 32.0, "minLng": 70.0, "maxLng": 80.0}
-        },
-        "Tulsi": {
-            "center": (21.5, 82.5),  # Central India
-            "max_radius_km": 1500,
-            "bounding_box": {"minLat": 8.0, "maxLat": 35.0, "minLng": 68.0, "maxLng": 97.0}
-        },
-        "Brahmi": {
-            "center": (18.0, 83.5),  # South-East India
-            "max_radius_km": 700,
-            "bounding_box": {"minLat": 8.0, "maxLat": 28.0, "minLng": 75.0, "maxLng": 92.0}
-        },
-        "Giloy": {
-            "center": (19.0, 81.0),  # Tropical India
-            "max_radius_km": 800,
-            "bounding_box": {"minLat": 10.0, "maxLat": 28.0, "minLng": 72.0, "maxLng": 90.0}
-        },
-        "Shatavari": {
-            "center": (24.0, 77.5),  # North-Central India
-            "max_radius_km": 500,
-            "bounding_box": {"minLat": 18.0, "maxLat": 30.0, "minLng": 70.0, "maxLng": 85.0}
-        }
-    }
-    
-    # Default zone for unknown species
-    if species not in HERB_ZONES:
-        return {"valid": True, "method": "no_zone_defined", "species": species}
-    
-    zone = HERB_ZONES[species]
-    bbox = zone["bounding_box"]
-    
-    # STEP 1: Fast bounding box check
-    if not (bbox["minLat"] <= latitude <= bbox["maxLat"] and 
-            bbox["minLng"] <= longitude <= bbox["maxLng"]):
-        return {
-            "valid": False,
-            "method": "bounding_box",
-            "reason": f"Location ({latitude}, {longitude}) outside {species} cultivation zone"
-        }
-    
-    # STEP 2: Haversine distance check
-    center_lat, center_lon = zone["center"]
-    distance = calculate_haversine_distance(latitude, longitude, center_lat, center_lon)
-    
-    if distance > zone["max_radius_km"]:
-        return {
-            "valid": False,
-            "method": "haversine",
-            "distance_km": distance,
-            "max_radius_km": zone["max_radius_km"],
-            "reason": f"Distance {distance}km exceeds maximum {zone['max_radius_km']}km from zone center"
-        }
-    
-    return {
-        "valid": True,
-        "method": "haversine",
-        "distance_km": distance,
-        "zone_center": {"lat": center_lat, "lon": center_lon}
-    }
-
-
-def calculate_merkle_root(fingerprints: list) -> str:
-    """
-    PATENT CLAIM 4: Merkle Tree Root Calculation
-    
-    Calculates the Merkle root from an array of SHA-256 fingerprints.
-    Used for efficient batch integrity verification.
-    """
-    if not fingerprints:
-        return None
-    if len(fingerprints) == 1:
-        return fingerprints[0]
-    
-    current_level = fingerprints.copy()
-    
-    # Pad to even number if necessary
-    if len(current_level) % 2 != 0:
-        current_level.append(current_level[-1])
-    
-    while len(current_level) > 1:
-        next_level = []
-        for i in range(0, len(current_level), 2):
-            combined = current_level[i] + current_level[i + 1]
-            parent_hash = hashlib.sha256(combined.encode()).hexdigest()
-            next_level.append(parent_hash)
-        current_level = next_level
-    
-    return current_level[0]
-
-# ============= END PATENT FEATURES =============
-
 def calculate_hash(data: dict) -> str:
-    """SHA-256 hash generation for data integrity (Patent Claim 3)"""
     json_str = json.dumps(data, sort_keys=True, default=str); return hashlib.sha256(json_str.encode()).hexdigest()
 
 def generate_qr_code(product_id: str) -> tuple[str, str]:
@@ -391,54 +247,20 @@ async def create_product(product: Product, current_user: User = Depends(get_curr
 async def trace_product(trace_id: str):
     product = await db.products.find_one({"$or": [{"id": trace_id}, {"batch_id": trace_id}]})
     if not product: raise HTTPException(status_code=404, detail="Product not found")
-    batch_id_to_search = product.get("batch_id", product.get("id", trace_id))
-    collection_events = await db.collection_events.find({"$or": [{"product_id": batch_id_to_search}, {"product_id": trace_id}]}).to_list(1000)
-    processing_steps = await db.processing_steps.find({"$or": [{"product_id": batch_id_to_search}, {"product_id": trace_id}]}).to_list(1000)
-    quality_tests = await db.quality_tests.find({"$or": [{"product_id": batch_id_to_search}, {"product_id": trace_id}]}).to_list(1000)
+    batch_id_to_search = product["batch_id"]
+    collection_events = await db.collection_events.find({"product_id": batch_id_to_search}).to_list(1000)
+    processing_steps = await db.processing_steps.find({"product_id": batch_id_to_search}).to_list(1000)
+    quality_tests = await db.quality_tests.find({"product_id": batch_id_to_search}).to_list(1000)
     blockchain_txs = await db.blockchain_transactions.find({"product_id": product["id"]}).sort("block_index", 1).to_list(1000)
-    
     def clean_mongo_doc(doc):
         if doc and '_id' in doc: del doc['_id']
         return doc
-    
-    def add_digital_fingerprint(doc):
-        """Add SHA-256 digital fingerprint to document"""
-        cleaned = clean_mongo_doc(doc.copy() if doc else {})
-        # Generate fingerprint from document data
-        fingerprint_data = {k: v for k, v in cleaned.items() if k not in ['blockchain_hash', 'digital_fingerprint']}
-        fingerprint = calculate_hash(fingerprint_data)
-        cleaned['digital_fingerprint'] = fingerprint
-        cleaned['fingerprint_algorithm'] = 'SHA-256'
-        return cleaned
-    
-    # Add fingerprints to all documents
-    product_with_fp = add_digital_fingerprint(product)
-    collections_with_fp = [add_digital_fingerprint(doc) for doc in collection_events]
-    processing_with_fp = [add_digital_fingerprint(doc) for doc in processing_steps]
-    tests_with_fp = [add_digital_fingerprint(doc) for doc in quality_tests]
-    
-    # Calculate master fingerprint (Merkle root of all fingerprints)
-    all_fingerprints = [product_with_fp.get('digital_fingerprint', '')]
-    all_fingerprints += [c.get('digital_fingerprint', '') for c in collections_with_fp]
-    all_fingerprints += [p.get('digital_fingerprint', '') for p in processing_with_fp]
-    all_fingerprints += [t.get('digital_fingerprint', '') for t in tests_with_fp]
-    master_fingerprint = calculate_hash({"fingerprints": all_fingerprints})
-    
     return {
-        "product": product_with_fp,
-        "collection_events": collections_with_fp,
-        "processing_steps": processing_with_fp,
-        "quality_tests": tests_with_fp,
+        "product": clean_mongo_doc(product),
+        "collection_events": [clean_mongo_doc(doc) for doc in collection_events],
+        "processing_steps": [clean_mongo_doc(doc) for doc in processing_steps],
+        "quality_tests": [clean_mongo_doc(doc) for doc in quality_tests],
         "blockchain_transactions": [clean_mongo_doc(doc) for doc in blockchain_txs],
-        "digital_fingerprints": {
-            "master_fingerprint": master_fingerprint,
-            "algorithm": "SHA-256",
-            "merkle_root": master_fingerprint,
-            "total_events": len(collection_events) + len(processing_steps) + len(quality_tests),
-            "verification_status": "VERIFIED",
-            "patent_pending": True,
-            "note": "Each event has its own digital fingerprint. Master fingerprint is the Merkle root of all event fingerprints."
-        }
     }
 
 @api_router.get("/analytics/dashboard")
@@ -663,20 +485,12 @@ async def trace_product_on_blockchain(product_id: str):
             if doc and '_id' in doc: del doc['_id']
             return doc
         
-        # Get all related events from MongoDB
-        batch_id_to_search = product.get("batch_id", product.get("id", product_id))
-        collection_events = await db.collection_events.find({"$or": [{"product_id": batch_id_to_search}, {"product_id": product_id}]}).to_list(1000)
-        processing_steps = await db.processing_steps.find({"$or": [{"product_id": batch_id_to_search}, {"product_id": product_id}]}).to_list(1000)
-        quality_tests = await db.quality_tests.find({"$or": [{"product_id": batch_id_to_search}, {"product_id": product_id}]}).to_list(1000)
-        
         return {
             "product_id": product_id,
             "blockchain_verified": False,
             "fallback": "MongoDB cache",
             "product": clean_mongo_doc(product),
-            "collection_events": [clean_mongo_doc(doc) for doc in collection_events],
-            "processing_steps": [clean_mongo_doc(doc) for doc in processing_steps],
-            "quality_tests": [clean_mongo_doc(doc) for doc in quality_tests],
+            "error": str(e),
             "patent_pending": True
         }
 
