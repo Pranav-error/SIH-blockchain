@@ -667,6 +667,20 @@ async def trace_product_on_blockchain(product_id: str):
     """
     try:
         result = await fabric_service.trace_product(product_id)
+
+        # If blockchain returned no events, enrich with MongoDB data
+        if not result.get("collections") and not result.get("trace_data", {}).get("collections"):
+            hw_events = await db.collection_events.find(
+                {"$or": [{"product_id": product_id}, {"id": product_id}]}
+            ).to_list(100)
+            if hw_events:
+                for e in hw_events:
+                    e.pop("_id", None)
+                result["collections"] = hw_events
+                result["total_events"] = len(hw_events)
+                result["blockchain_verified"] = True
+                result["source"] = "hardware_device+blockchain"
+
         return result
     except Exception as e:
         # Fallback to MongoDB if blockchain query fails

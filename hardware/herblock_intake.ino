@@ -1,53 +1,58 @@
 /**
- * HerBlock ESP32-S3 Field Intake Node
+ * HerBlock ESP32 Field Intake Node
  * =====================================
- * Captures herb weight + moisture from sensors, lets the collector
- * press A/B/C to assign quality grade, then POSTs a JSON record to
- * the HerBlock backend /api/intake endpoint.
+ * OLED: SPI (MOSI=23, CLK=18, DC=2, RESET=4)
+ * Load cell: I2C at 0x08 (SDA=21, SCL=22)
+ * GPS: hardcoded to CMTI Bengaluru for demo
  *
- * GPS is HARDCODED for the CMTI demo (Neo-6M won't lock indoors).
- * Coords 12.9716, 77.5946 = CMTI Bengaluru — Ashwagandha zone expanded to 1800 km for demo.
- *
- * Hardware team: Harshalykumar + Karanam Nayan
- * Backend by: Pranav (sai pranav)
+ * Hardware: Harshalykumar + Karanam Nayan
+ * Backend:  Pranav (sai pranav)
  */
 
 #include <WiFi.h>
 #include <HTTPClient.h>
-#include <ArduinoJson.h>
-#include <HX711.h>
 #include <Wire.h>
+#include <SPI.h>
+#include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 
 // ─────────────────────────────────────────────
-//  CONFIG — edit before flashing
+//  CONFIG
 // ─────────────────────────────────────────────
 const char* WIFI_SSID    = "CMTI Tp-link";
 const char* WIFI_PASS    = "Cmti@2026";
 
-const char* SERVER_IP    = "192.168.1.100";  // run: ifconfig | grep "inet " on your laptop
-const int   SERVER_PORT  = 8080;
-const char* DEVICE_KEY   = "hb-device-REPLACE_WITH_API_KEY"; // from: POST /api/devices/register
+const char* SERVER_URL   = "https://herblock-api.onrender.com/api/intake";
+const char* DEVICE_KEY   = "hb-device-ef3a2e6af3f744c9b25972733bfcadd1";  // production key
 const char* DEVICE_ID    = "INTAKE_HUB_01";
-const char* HERB_TYPE    = "Ashwagandha";    // change per batch
+const char* HERB_TYPE    = "Ashwagandha";
 const char* COLLECTOR_ID = "COL-001";
 
-// GPS — hardcoded (Neo-6M won't lock indoors)
-// 12.9716, 77.5946 = CMTI Bengaluru — passes Haversine check (zone expanded to 1800 km for demo)
-const float GPS_LAT = 12.9716;
-const float GPS_LON = 77.5946;
+// GPS hardcoded — CMTI Bengaluru (zone expanded to 1800 km for demo)
+const float GPS_LAT = 13.0326;
+const float GPS_LON = 77.5354;
 
 // ─────────────────────────────────────────────
 //  PIN DEFINITIONS
 // ─────────────────────────────────────────────
-// HX711 weight sensor
-#define HX711_DOUT  4
-#define HX711_SCK   5
+// I2C (load cell)
+#define I2C_SDA        21
+#define I2C_SCL        22
+#define LOADCELL_ADDR  0x08
+
+// SPI OLED
+#define OLED_MOSI   23
+#define OLED_CLK    18
+#define OLED_DC      2
+#define OLED_RESET   4
+#define OLED_CS     -1
+#define SCREEN_W   128
+#define SCREEN_H    64
 
 // Moisture sensor (analog)
-#define MOISTURE_PIN 34
+#define MOISTURE_PIN  34
 
-// Grade buttons
+// Grade buttons (active LOW)
 #define BTN_GRADE_A  12
 #define BTN_GRADE_B  13
 #define BTN_GRADE_C  14
@@ -56,186 +61,38 @@ const float GPS_LON = 77.5946;
 #define LED_GREEN    25
 #define LED_RED      26
 
-// OLED (I2C)
-#define OLED_SDA     21
-#define OLED_SCL     22
-#define OLED_ADDR    0x3C
-#define OLED_WIDTH   128
-#define OLED_HEIGHT  64
-
 // ─────────────────────────────────────────────
 //  GLOBALS
 // ─────────────────────────────────────────────
-HX711 scale;
-Adafruit_SSD1306 display(OLED_WIDTH, OLED_HEIGHT, &Wire, -1);
+Adafruit_SSD1306 display(SCREEN_W, SCREEN_H, &SPI, OLED_DC, OLED_RESET, OLED_CS);
 
-float   weightGrams   = 0.0;
-float   moisturePct   = 0.0;
-char    gradeSelected = 0;   // 'A', 'B', or 'C' — set by button press
-bool    submitted     = false;
+float weightGrams  = 0.0;
+float moisturePct  = 0.0;
+char  gradeSelected = 0;
+bool  submitted     = false;
 
 // ─────────────────────────────────────────────
-//  SETUP
+//  READ WEIGHT via I2C load cell
 // ─────────────────────────────────────────────
-void setup() {
-  Serial.begin(115200);
+float readWeight() {
+  Wire.beginTransmission(LOADCELL_ADDR);
+  Wire.write(0x00);
+  Wire.endTransmission();
 
-  // OLED
-  Wire.begin(OLED_SDA, OLED_SCL);
-  if (!display.begin(SSD1306_SWITCHCAPVCC, OLED_ADDR)) {
-    Serial.println("[OLED] init failed");
+  Wire.requestFrom(LOADCELL_ADDR, 4);
+  if (Wire.available() == 4) {
+    long value = 0;
+    value |= (long)Wire.read() << 24;
+    value |= (long)Wire.read() << 16;
+    value |= (long)Wire.read() << 8;
+    value |= (long)Wire.read();
+    return value / 100.0;  // adjust scale factor if needed
   }
-  oledSplash();
-
-  // Grade buttons
-  pinMode(BTN_GRADE_A, INPUT_PULLUP);
-  pinMode(BTN_GRADE_B, INPUT_PULLUP);
-  pinMode(BTN_GRADE_C, INPUT_PULLUP);
-
-  // LEDs
-  pinMode(LED_GREEN, OUTPUT);
-  pinMode(LED_RED,   OUTPUT);
-  digitalWrite(LED_GREEN, LOW);
-  digitalWrite(LED_RED,   LOW);
-
-  // HX711
-  scale.begin(HX711_DOUT, HX711_SCK);
-  scale.set_scale(2280.0);  // calibration factor — adjust for your load cell
-  scale.tare();
-  Serial.println("[HX711] ready");
-
-  // WiFi
-  oledMessage("WiFi", "Connecting...");
-  WiFi.begin(WIFI_SSID, WIFI_PASS);
-  int tries = 0;
-  while (WiFi.status() != WL_CONNECTED && tries < 20) {
-    delay(500);
-    Serial.print(".");
-    tries++;
-  }
-
-  if (WiFi.status() == WL_CONNECTED) {
-    Serial.printf("\n[WiFi] connected — IP: %s\n", WiFi.localIP().toString().c_str());
-    oledMessage("WiFi OK", WiFi.localIP().toString().c_str());
-  } else {
-    Serial.println("\n[WiFi] FAILED — running offline");
-    oledMessage("WiFi FAIL", "Offline mode");
-  }
-
-  delay(1500);
-  oledMessage("Ready", "Press A / B / C");
+  return 0.0;
 }
 
 // ─────────────────────────────────────────────
-//  LOOP
-// ─────────────────────────────────────────────
-void loop() {
-  // Read sensors
-  if (scale.is_ready()) {
-    weightGrams = scale.get_units(5);
-    if (weightGrams < 0) weightGrams = 0;
-  }
-
-  int rawMoisture = analogRead(MOISTURE_PIN);
-  // Map raw ADC (0–4095) to percentage (0–100)
-  moisturePct = map(rawMoisture, 0, 4095, 100, 0);
-
-  // Poll grade buttons (active LOW)
-  if (digitalRead(BTN_GRADE_A) == LOW) { gradeSelected = 'A'; submitted = false; delay(300); }
-  if (digitalRead(BTN_GRADE_B) == LOW) { gradeSelected = 'B'; submitted = false; delay(300); }
-  if (digitalRead(BTN_GRADE_C) == LOW) { gradeSelected = 'C'; submitted = false; delay(300); }
-
-  // Update OLED display
-  if (!submitted) {
-    oledDashboard();
-  }
-
-  // Submit once a grade is selected and we haven't submitted yet
-  if (gradeSelected && !submitted) {
-    delay(1000);  // short pause so collector can confirm
-    submitToBackend();
-  }
-
-  delay(200);
-}
-
-// ─────────────────────────────────────────────
-//  SUBMIT TO BACKEND
-// ─────────────────────────────────────────────
-void submitToBackend() {
-  if (WiFi.status() != WL_CONNECTED) {
-    Serial.println("[HTTP] no WiFi — skipping");
-    oledMessage("No WiFi", "Can't submit");
-    flashLED(LED_RED, 3);
-    return;
-  }
-
-  oledMessage("Sending...", "Please wait");
-
-  // Build JSON payload
-  StaticJsonDocument<512> doc;
-  doc["device_id"]       = DEVICE_ID;
-  doc["herb_type"]       = HERB_TYPE;
-  doc["weight_grams"]    = weightGrams;
-  doc["moisture_percent"]= moisturePct;
-  doc["latitude"]        = GPS_LAT;
-  doc["longitude"]       = GPS_LON;
-  doc["collector_id"]    = COLLECTOR_ID;
-  doc["quality_grade"]   = String(gradeSelected);
-  doc["notes"]           = "CMTI DIC 2026 Demo - GPS hardcoded";
-
-  String payload;
-  serializeJson(doc, payload);
-
-  Serial.printf("[HTTP] POST %s:%d/api/intake\n", SERVER_IP, SERVER_PORT);
-  Serial.println(payload);
-
-  String url = String("http://") + SERVER_IP + ":" + SERVER_PORT + "/api/intake";
-
-  HTTPClient http;
-  http.begin(url);
-  http.addHeader("Content-Type",  "application/json");
-  http.addHeader("X-Device-Key",  DEVICE_KEY);
-
-  int statusCode = http.POST(payload);
-  String response = http.getString();
-  http.end();
-
-  Serial.printf("[HTTP] status: %d\n", statusCode);
-  Serial.println(response);
-
-  // Parse response
-  StaticJsonDocument<512> resp;
-  DeserializationError err = deserializeJson(resp, response);
-
-  if (statusCode == 200 && !err) {
-    const char* status = resp["status"] | "unknown";
-    const char* grade  = resp["grade"]  | "?";
-
-    if (String(status) == "accepted") {
-      oledMessage("ACCEPTED", String("Grade: ") + grade);
-      flashLED(LED_GREEN, 3);
-      submitted = true;
-      gradeSelected = 0;  // reset for next batch
-    } else {
-      const char* reason = resp["reason"] | "GPS rejected";
-      oledMessage("REJECTED", reason);
-      flashLED(LED_RED, 5);
-      submitted = true;
-    }
-  } else {
-    Serial.printf("[HTTP] error — code %d\n", statusCode);
-    oledMessage("HTTP Error", String(statusCode));
-    flashLED(LED_RED, 3);
-  }
-
-  delay(3000);
-  submitted = false;
-  oledMessage("Ready", "Press A / B / C");
-}
-
-// ─────────────────────────────────────────────
-//  HELPERS
+//  OLED HELPERS
 // ─────────────────────────────────────────────
 void oledMessage(const char* line1, const char* line2) {
   display.clearDisplay();
@@ -244,7 +101,7 @@ void oledMessage(const char* line1, const char* line2) {
   display.setCursor(0, 8);
   display.println(line1);
   display.setTextSize(1);
-  display.setCursor(0, 40);
+  display.setCursor(0, 42);
   display.println(line2);
   display.display();
 }
@@ -253,17 +110,14 @@ void oledMessage(const char* line1, String line2) {
   oledMessage(line1, line2.c_str());
 }
 
-// Splash screen shown on boot
 void oledSplash() {
   display.clearDisplay();
   display.setTextColor(SSD1306_WHITE);
 
-  // Big title
   display.setTextSize(2);
   display.setCursor(10, 4);
   display.println("HerBlock");
 
-  // Divider line
   display.drawLine(0, 24, 127, 24, SSD1306_WHITE);
 
   display.setTextSize(1);
@@ -277,55 +131,224 @@ void oledSplash() {
   delay(2500);
 }
 
-// Live sensor dashboard shown during normal operation
 void oledDashboard() {
   display.clearDisplay();
   display.setTextColor(SSD1306_WHITE);
 
-  // Header bar
+  // Header bar (inverted)
   display.fillRect(0, 0, 128, 10, SSD1306_WHITE);
   display.setTextSize(1);
   display.setTextColor(SSD1306_BLACK);
   display.setCursor(2, 1);
-  display.print("HerBlock  |  ");
+  display.print("HerBlock | ");
   display.print(HERB_TYPE);
   display.setTextColor(SSD1306_WHITE);
 
-  // Weight
-  display.setCursor(0, 14);
-  display.print("Wt:");
+  // Weight — large font
   display.setTextSize(2);
-  display.setCursor(22, 11);
-  display.printf("%.0fg", weightGrams);
+  display.setCursor(0, 12);
+  display.print("Wt: ");
+  display.print((int)weightGrams);
+  display.print("g");
   display.setTextSize(1);
 
   // Moisture
   display.setCursor(0, 30);
-  display.printf("Moisture: %.1f%%", moisturePct);
+  display.print("Moisture: ");
+  display.print((int)moisturePct);
+  display.print("%");
 
   // GPS
   display.setCursor(0, 40);
   display.print("GPS: CMTI BLR [OK]");
 
-  // Divider
-  display.drawLine(0, 50, 127, 50, SSD1306_WHITE);
+  display.drawLine(0, 51, 127, 51, SSD1306_WHITE);
 
-  // Grade / instruction
+  // Bottom: grade / instruction
   display.setCursor(0, 54);
   if (gradeSelected) {
-    display.printf("Grade: %c  -> Submitting...", gradeSelected);
+    display.print("Grade: ");
+    display.print(gradeSelected);
+    display.print("  -> Submitting");
   } else {
-    display.print("Press A=Grade-A  B  C");
+    display.print("A=Best  B=OK  C=Low");
   }
 
   display.display();
 }
 
+// ─────────────────────────────────────────────
+//  LED HELPER
+// ─────────────────────────────────────────────
 void flashLED(int pin, int times) {
   for (int i = 0; i < times; i++) {
-    digitalWrite(pin, HIGH);
-    delay(200);
-    digitalWrite(pin, LOW);
-    delay(200);
+    digitalWrite(pin, HIGH); delay(200);
+    digitalWrite(pin, LOW);  delay(200);
   }
+}
+
+// ─────────────────────────────────────────────
+//  SETUP
+// ─────────────────────────────────────────────
+void setup() {
+  Serial.begin(115200);
+  delay(500);
+  Serial.println("\n===== HerBlock Booting =====");
+
+  // SPI OLED — init before I2C, no manual SPI.begin()
+  if (!display.begin(SSD1306_SWITCHCAPVCC)) {
+    Serial.println("[OLED] FAILED — check SPI wiring");
+  } else {
+    Serial.println("[OLED] OK");
+  }
+  oledSplash();
+
+  // I2C for load cell
+  Wire.begin(I2C_SDA, I2C_SCL);
+
+  // Buttons
+  pinMode(BTN_GRADE_A, INPUT_PULLUP);
+  pinMode(BTN_GRADE_B, INPUT_PULLUP);
+  pinMode(BTN_GRADE_C, INPUT_PULLUP);
+
+  // LEDs
+  pinMode(LED_GREEN, OUTPUT);
+  pinMode(LED_RED,   OUTPUT);
+  digitalWrite(LED_GREEN, LOW);
+  digitalWrite(LED_RED,   LOW);
+  flashLED(LED_GREEN, 1);
+  flashLED(LED_RED,   1);
+
+  // WiFi
+  oledMessage("WiFi", "Connecting...");
+  Serial.printf("[WiFi] connecting to: %s  →  %s\n", WIFI_SSID, SERVER_URL);
+  WiFi.begin(WIFI_SSID, WIFI_PASS);
+
+  int tries = 0;
+  while (WiFi.status() != WL_CONNECTED && tries < 30) {
+    delay(500);
+    Serial.print(".");
+    tries++;
+    display.clearDisplay();
+    display.setTextSize(1);
+    display.setTextColor(SSD1306_WHITE);
+    display.setCursor(0, 0);
+    display.println("Connecting WiFi...");
+    display.printf("Try: %d/30\n", tries);
+    display.display();
+  }
+  Serial.println();
+
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.printf("[WiFi] connected — IP: %s\n", WiFi.localIP().toString().c_str());
+    oledMessage("WiFi OK", WiFi.localIP().toString().c_str());
+    flashLED(LED_GREEN, 2);
+  } else {
+    Serial.println("[WiFi] FAILED");
+    oledMessage("WiFi FAIL", "Check creds");
+    flashLED(LED_RED, 3);
+  }
+
+  delay(1500);
+  oledDashboard();
+}
+
+// ─────────────────────────────────────────────
+//  LOOP
+// ─────────────────────────────────────────────
+void loop() {
+  // Read load cell
+  weightGrams = readWeight();
+  if (weightGrams < 0) weightGrams = 0;
+
+  // Read moisture
+  int raw = analogRead(MOISTURE_PIN);
+  moisturePct = map(raw, 0, 4095, 100, 0);
+
+  // Grade buttons
+  if (digitalRead(BTN_GRADE_A) == LOW) { gradeSelected = 'A'; submitted = false; delay(300); }
+  if (digitalRead(BTN_GRADE_B) == LOW) { gradeSelected = 'B'; submitted = false; delay(300); }
+  if (digitalRead(BTN_GRADE_C) == LOW) { gradeSelected = 'C'; submitted = false; delay(300); }
+
+  // Refresh OLED
+  if (!submitted) {
+    oledDashboard();
+  }
+
+  // Serial debug every 2s
+  static unsigned long lastPrint = 0;
+  if (millis() - lastPrint > 2000) {
+    Serial.printf("[SENSOR] wt=%.1fg  moist=%.1f%%  grade=%c  wifi=%s\n",
+      weightGrams, moisturePct,
+      gradeSelected ? gradeSelected : '-',
+      WiFi.status() == WL_CONNECTED ? "OK" : "LOST");
+    lastPrint = millis();
+  }
+
+  // Submit on grade press
+  if (gradeSelected && !submitted) {
+    delay(800);
+    submitToBackend();
+  }
+
+  delay(200);
+}
+
+// ─────────────────────────────────────────────
+//  SUBMIT TO BACKEND
+// ─────────────────────────────────────────────
+void submitToBackend() {
+  if (WiFi.status() != WL_CONNECTED) {
+    oledMessage("No WiFi", "Can't submit");
+    flashLED(LED_RED, 3);
+    return;
+  }
+
+  oledMessage("Sending...", "Please wait");
+
+  String payload = "{";
+  payload += "\"device_id\":\""      + String(DEVICE_ID)      + "\",";
+  payload += "\"herb_type\":\""      + String(HERB_TYPE)       + "\",";
+  payload += "\"weight_grams\":"     + String(weightGrams, 1)  + ",";
+  payload += "\"moisture_percent\":" + String(moisturePct, 1)  + ",";
+  payload += "\"latitude\":"         + String(GPS_LAT, 4)      + ",";
+  payload += "\"longitude\":"        + String(GPS_LON, 4)      + ",";
+  payload += "\"collector_id\":\""   + String(COLLECTOR_ID)    + "\",";
+  payload += "\"quality_grade\":\""  + String(gradeSelected)   + "\",";
+  payload += "\"notes\":\"CMTI DIC 2026 Demo\"";
+  payload += "}";
+
+  Serial.printf("[HTTP] POST → %s\n", SERVER_URL);
+  Serial.println(payload);
+
+  HTTPClient http;
+  http.begin(SERVER_URL);
+  http.addHeader("Content-Type", "application/json");
+  http.addHeader("X-Device-Key",  DEVICE_KEY);
+
+  int    code     = http.POST(payload);
+  String response = http.getString();
+  http.end();
+
+  Serial.printf("[HTTP] code=%d  response=%s\n", code, response.c_str());
+
+  if (code == 200) {
+    // Quick parse — look for "accepted"
+    if (response.indexOf("accepted") >= 0) {
+      oledMessage("ACCEPTED", "Blockchain OK!");
+      flashLED(LED_GREEN, 3);
+    } else {
+      oledMessage("REJECTED", "GPS/Zone fail");
+      flashLED(LED_RED, 5);
+    }
+  } else {
+    oledMessage("HTTP Error", String(code));
+    flashLED(LED_RED, 3);
+  }
+
+  submitted     = true;
+  gradeSelected = 0;
+  delay(3000);
+  submitted = false;
+  oledDashboard();
 }
