@@ -57,8 +57,8 @@ app = FastAPI()
 api_router = APIRouter(prefix="/api")
 
 # --- Add these new variables after your app setup ---
-GOOGLE_CLIENT_ID = os.environ['GOOGLE_CLIENT_ID']
-GOOGLE_CLIENT_SECRET = os.environ['GOOGLE_CLIENT_SECRET']
+GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID', '')
+GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET', '')
 REDIRECT_URI = f"{os.environ.get('RENDER_EXTERNAL_URL', 'http://127.0.0.1:8000')}/api/auth/callback"
 AUTHORIZATION_URL = "https://accounts.google.com/o/oauth2/v2/auth"
 TOKEN_URL = "https://www.googleapis.com/oauth2/v4/token"
