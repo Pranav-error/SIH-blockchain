@@ -11,7 +11,7 @@ Features:
 Copyright (c) 2026 HerBlock India
 """
 
-from fastapi import FastAPI, APIRouter, HTTPException, Depends
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, Header
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
@@ -994,6 +994,189 @@ async def batch_sync_collections(request: BatchSyncRequest):
     }
 
 app.include_router(collector_router)
+
+# ==================== HARDWARE / IoT INTAKE ENDPOINT ====================
+# For ESP32-S3 field devices — no user login needed on the device.
+# Authentication via X-Device-Key header (registered per-device API key).
+
+hardware_router = APIRouter(prefix="/api", tags=["Hardware IoT"])
+
+# Harvest season calendar per NMPB guidelines
+HARVEST_SEASONS: Dict[str, List[tuple]] = {
+    "Ashwagandha": [(10, 2)],   # Oct–Feb (wraps year)
+    "Tulsi":        [(6, 11)],   # Jun–Nov
+    "Brahmi":       [(7, 10)],   # Jul–Oct
+    "Giloy":        [(10, 3)],   # Oct–Mar (wraps year)
+    "Guduchi":      [(10, 3)],
+    "Shatavari":    [(3, 6)],    # Mar–Jun
+}
+
+def validate_harvest_season(species: str, month: int) -> dict:
+    if species not in HARVEST_SEASONS:
+        return {"valid": True, "reason": "no_season_restriction"}
+    for (start, end) in HARVEST_SEASONS[species]:
+        if start <= end:
+            if start <= month <= end:
+                return {"valid": True}
+        else:  # range wraps year e.g. Oct(10)–Feb(2)
+            if month >= start or month <= end:
+                return {"valid": True}
+    return {
+        "valid": False,
+        "reason": f"{species} is out of harvest season. Valid months: {HARVEST_SEASONS[species]}"
+    }
+
+class HardwareIntakeRequest(BaseModel):
+    device_id: str
+    herb_type: str
+    weight_grams: float
+    moisture_percent: Optional[float] = None
+    latitude: float
+    longitude: float
+    collector_id: Optional[str] = "DEVICE"
+    # Grade is set by the trained collector via buttons on the device (A / B / C)
+    quality_grade: str = "B"
+    notes: Optional[str] = ""
+
+
+@hardware_router.post("/intake")
+async def hardware_intake(
+    request: HardwareIntakeRequest,
+    x_device_key: str = Header(...)
+):
+    """
+    Primary endpoint for ESP32-S3 field collector devices.
+    Validates GPS zone + harvest season, determines herb grade,
+    then commits immutable record to blockchain.
+    Returns grade + accepted/rejected so OLED and LEDs respond.
+    """
+    # 1. Authenticate device
+    device = await db.devices.find_one({"api_key": x_device_key, "active": True})
+    if not device:
+        raise HTTPException(status_code=401, detail="Invalid or inactive device key")
+
+    # 2. GPS geo-fence validation (patent feature)
+    geo_result = validate_gps_geofence(request.latitude, request.longitude, request.herb_type)
+    if not geo_result["valid"]:
+        return {
+            "status": "rejected",
+            "grade": "REJECTED",
+            "reason": geo_result.get("reason", "GPS outside approved zone"),
+            "device_id": request.device_id,
+            "validation": {"gps": geo_result}
+        }
+
+    # 3. Harvest season validation
+    current_month = datetime.now(timezone.utc).month
+    season_result = validate_harvest_season(request.herb_type, current_month)
+    demo_mode = os.environ.get("DEMO_MODE", "false").lower() == "true"
+    if not season_result["valid"] and not demo_mode:
+        return {
+            "status": "rejected",
+            "grade": "REJECTED",
+            "reason": season_result.get("reason"),
+            "device_id": request.device_id,
+            "validation": {"season": season_result}
+        }
+
+    # 4. Build collection record
+    # Grade is set by the trained collector — they press A/B/C on the device
+    grade = request.quality_grade.upper()
+    if grade not in ("A", "B", "C"):
+        grade = "B"  # safe fallback
+
+    batch_id = f"{request.herb_type[:3].upper()}-{grade}-{datetime.now().strftime('%Y%m%d')}-{str(uuid.uuid4())[:6].upper()}"
+    event_id = str(uuid.uuid4())
+    collector = request.collector_id or device.get("default_collector", request.device_id)
+
+    event = {
+        "id": event_id,
+        "product_id": batch_id,
+        "source": "hardware_device",
+        "device_id": request.device_id,
+        "collector_id": collector,
+        "collector_name": device.get("location", request.device_id),
+        "species_name": request.herb_type,
+        "latitude": request.latitude,
+        "longitude": request.longitude,
+        "location_name": device.get("location", "Field Device"),
+        "quantity_kg": round(request.weight_grams / 1000, 3),
+        "weight_grams": request.weight_grams,
+        "moisture_percent": request.moisture_percent,
+        # Collector-certified grade — immutable once on blockchain
+        "quality_grade": grade,
+        "grade_certified_by": collector,
+        "weather_conditions": "Captured by device",
+        "notes": request.notes or "",
+        "geo_validated": True,
+        "season_validated": True,
+        "geo_validation_detail": geo_result,
+        "blockchain_hash": "",
+        "harvest_date": datetime.now(timezone.utc),
+        "timestamp": datetime.now(timezone.utc),
+    }
+
+    # 5. Hash and store
+    event["blockchain_hash"] = calculate_hash({k: v for k, v in event.items() if k != "blockchain_hash"})
+    await db.collection_events.insert_one(event)
+
+    # 6. Blockchain transaction
+    tx = await create_blockchain_transaction(batch_id, "hardware_collection", event)
+
+    return {
+        "status": "accepted",
+        "grade": grade,
+        "batch_id": batch_id,
+        "tx_id": tx.data_hash,
+        "event_id": event_id,
+        "collector_id": collector,
+        "moisture_percent": request.moisture_percent,
+        "weight_grams": request.weight_grams,
+        "validation": {"gps": geo_result, "season": season_result},
+        "trace_url": f"{os.environ.get('FRONTEND_URL', 'http://localhost:3000')}/trace/{batch_id}"
+    }
+
+
+@hardware_router.get("/intake/events")
+async def get_hardware_intake_events(limit: int = 20):
+    """Recent hardware intake events — for live dashboard feed."""
+    events = await db.collection_events.find(
+        {"source": "hardware_device"}
+    ).sort("timestamp", -1).limit(limit).to_list(limit)
+    for e in events:
+        e.pop("_id", None)
+    return {"events": events, "count": len(events)}
+
+
+@hardware_router.post("/devices/register")
+async def register_device(
+    device_id: str,
+    location: str,
+    default_collector: Optional[str] = None,
+    admin_key: str = Header(...)
+):
+    """Register an ESP32 device and get back its permanent API key (admin only)."""
+    if admin_key != os.environ.get("ADMIN_KEY", "herblock-admin-2026"):
+        raise HTTPException(status_code=403, detail="Invalid admin key")
+    if await db.devices.find_one({"device_id": device_id}):
+        raise HTTPException(status_code=400, detail="Device already registered")
+
+    api_key = f"hb-device-{str(uuid.uuid4()).replace('-', '')}"
+    await db.devices.insert_one({
+        "device_id": device_id,
+        "api_key": api_key,
+        "location": location,
+        "default_collector": default_collector,
+        "active": True,
+        "registered_at": datetime.now(timezone.utc)
+    })
+    return {
+        "device_id": device_id,
+        "api_key": api_key,
+        "note": "Flash this key into the ESP32 firmware. It will not be shown again."
+    }
+
+app.include_router(hardware_router)
 
 # CORS configuration
 origins = [

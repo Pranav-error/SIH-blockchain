@@ -21,8 +21,8 @@ HerBlock proposes a 90-day pilot program with Himalaya to implement blockchain-b
 - Consumer-scannable QR codes for authenticity verification
 - Export-compliant documentation
 
-**Investment Required:** ₹3-5 Lakhs  
-**Expected ROI:** 10-15x through brand trust, export compliance, and fraud prevention
+**Pilot Cost to Himalaya:** Zero — no financial commitment required  
+**Expected Value:** ₹90-180 Lakhs annually through brand trust, export compliance, and fraud prevention
 
 ---
 
@@ -206,21 +206,11 @@ HerBlock is a **blockchain-based traceability system** that creates an **immutab
 
 ---
 
-## 4. INVESTMENT & ROI
+## 4. VALUE & ROI
 
-### 4.1 Pilot Investment
+### 4.1 Pilot Cost to Himalaya
 
-| Item | Cost (₹) | Notes |
-|------|----------|-------|
-| Blockchain Setup & Deployment | 1,50,000 | One-time |
-| Collector Training & Registration | 50,000 | 20 collectors |
-| Mobile App Customization | 50,000 | Himalaya branding |
-| Integration with ERP | 75,000 | API development |
-| QR Code Generation System | 25,000 | Per-batch codes |
-| Support & Maintenance (3 months) | 50,000 | Dedicated support |
-| **Total Pilot Investment** | **₹4,00,000** | |
-
-**Payment Terms:** 50% upfront, 50% on completion
+> **This pilot requires no financial commitment from Himalaya.** There is no licensing fee, setup cost, or payment of any kind during the pilot period. Himalaya's only ask is operational access: collector participation, IT coordination, and a point of contact from the supply chain team.
 
 ### 4.2 Expected ROI
 
@@ -232,7 +222,7 @@ HerBlock is a **blockchain-based traceability system** that creates an **immutab
 | **Audit Efficiency** | ₹5-10 Lakhs | Reduce manual documentation |
 | **Total Annual Benefit** | **₹90-180 Lakhs** | |
 
-**ROI:** 20-45x return on pilot investment
+**Value delivered at zero pilot cost to Himalaya**
 
 ### 4.3 Comparison with Alternatives
 
@@ -242,7 +232,7 @@ HerBlock is a **blockchain-based traceability system** that creates an **immutab
 | RFID tags | ₹5-10 per unit | Can be removed/reattached |
 | QR codes (non-blockchain) | Low | Can be duplicated |
 | Generic blockchain | ₹10-20 Lakhs | No GPS validation |
-| **HerBlock** | **₹4 Lakhs (pilot)** | **GPS-validated, immutable, patent-pending** |
+| **HerBlock** | **No pilot cost** | **GPS-validated, immutable, patent-pending** |
 
 ---
 
@@ -255,7 +245,6 @@ HerBlock is a **blockchain-based traceability system** that creates an **immutab
 | **Patent-Pending Technology** | On-chain GPS validation - no competitor has this |
 | **India-Focused** | Built for Indian herb supply chains, AYUSH compliance |
 | **Working System** | Not a PowerPoint - live demo available |
-| **Student/Startup Pricing** | Enterprise features at startup costs |
 | **Quick Deployment** | 90 days to production, not 12 months |
 
 ### 5.2 Technical Differentiation

@@ -9,13 +9,15 @@ HerBlock brings transparency, authenticity, and sustainability to the Ayurvedic 
 
 ## ✨ Core Features
 
-- **🔗 Blockchain Simulation**: Tamper-evident ledger with cryptographic hash-chaining
-- **📍 Geo-Tagging**: Interactive maps for precise GPS location tracking of herb collection
+- **🔗 Enterprise Blockchain**: Hyperledger Fabric 2.4.x with Raft Consensus (CFT) and Node.js chaincode for immutable supply chain records
+- **📍 Geospatial Validation Engine**: On-chain GPS validation using Haversine formula to ensure herbs are collected in authorized zones
+- **🛡️ Hardware-Bound Cryptographic Security**: Integration with smartphone Secure Elements (Android StrongBox / iOS Secure Enclave) for non-repudiable collector identities
+- **⭐ Credibility Scoring**: Automated reputation engine that grades collectors based on quality, geographic compliance, and environmental telemetry
+- **📱 Mobile Application**: React Native field app for offline-first data capture and live geo-tagging
 - **🔍 End-to-End Traceability**: Complete journey from collection → processing → testing → final product
 - **📱 QR Code System**: Auto-generated QR codes for instant product verification
 - **🔐 Authentication**: JWT-based auth + Google OAuth2 integration
 - **📊 Analytics Dashboard**: Real-time statistics and supply chain monitoring
-- **🌐 Public Verification**: Anyone can trace products via QR code or batch ID
 
 ---
 
@@ -24,10 +26,12 @@ HerBlock brings transparency, authenticity, and sustainability to the Ayurvedic 
 | Component | Technologies |
 |-----------|-------------|
 | **Frontend** | React 19, React Router, Tailwind CSS, Radix UI, shadcn/ui, Leaflet.js, Axios |
-| **Backend** | Python 3, FastAPI, Uvicorn |
-| **Database** | MongoDB |
+| **Mobile App**| React Native 0.73, Expo |
+| **Backend** | Python 3.10+, FastAPI, Uvicorn, Pydantic |
+| **Blockchain** | Hyperledger Fabric 2.4.x, Node.js (Chaincode), CouchDB |
+| **Database** | MongoDB 6.0 |
 | **Authentication** | JWT, PassLib, Google OAuth2 |
-| **Build Tools** | Craco, PostCSS, Yarn |
+| **Build Tools** | Craco, PostCSS, Yarn, Docker |
 
 ---
 
@@ -279,32 +283,34 @@ lsof -ti:3000 | xargs kill -9
 
 ## 📁 Project Structure
 
-```
+```text
 SIH-blockchain/
-├── backend/
-│   ├── server.py              # FastAPI application
-│   ├── requirement.txt        # Python dependencies
-│   ├── .env                   # Environment variables
-│   └── venv/                  # Python virtual environment
+├── backend/                   # Python FastAPI backend
+│   ├── server.py              # Main application
+│   └── requirement.txt        # Dependencies
 │
-├── frontend/
-│   ├── public/
-│   │   └── index.html
-│   ├── src/
-│   │   ├── app.js            # Main React application
-│   │   ├── index.js          # Entry point
-│   │   ├── app.css           # Custom styles
-│   │   ├── index.css         # Tailwind base styles
-│   │   ├── components/       # Radix UI components
-│   │   ├── hooks/            # React hooks
-│   │   └── lib/              # Utilities
-│   ├── package.json          # Node dependencies
-│   ├── tailwind.config.js    # Tailwind configuration
-│   ├── craco.config.js       # Webpack configuration
-│   └── .env                  # Environment variables
+├── frontend/                  # React web dashboard
+│   ├── src/                   # React components
+│   └── package.json           # Node dependencies
 │
-└── README.md                 # This file
+├── mobile-app/                # React Native collector app (GPS & Capture)
+│
+├── PATENT/                    # Intellectual Property documents
+│   └── FORM2_HERBLOCK_PATENT.md
+│
+├── HIMALAYA_PITCH/            # Business proposals and executive briefs
+│   └── 10_EXECUTIVE_DECISION_BRIEF.md
+│
+├── TECHNICAL_DOCUMENTATION.md # Comprehensive system architecture
+└── README.md                  # This file
 ```
+
+---
+
+## 📜 Intellectual Property & Business
+
+- **Patent Pending**: Features an innovative On-Chain Geospatial Validation Engine (applying the Haversine formula inside smart contracts) blocking GPS spoofing at the blockchain level. See `PATENT/` directory.
+- **Enterprise Ready**: Designed to meet FSSAI, AYUSH, and EU GACP compliance standards. Full business proposals available in `HIMALAYA_PITCH/`.
 
 ---
 

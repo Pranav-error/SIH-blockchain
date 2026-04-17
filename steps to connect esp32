@@ -1,0 +1,159 @@
+Step-by-Step: Connecting ESP32 to the Backend                                                                                           
+                                                                                                                                 
+  Step 1 — Start the backend                                                                                                            
+                                                                                                                                          
+  cd backend
+  source venv/bin/activate                                                                                                                
+  docker start herblock-mongo   # or: docker run -d -p 27017:27017 --name herblock-mongo mongo                                   
+  uvicorn server:app --host 0.0.0.0 --reload                                                                                              
+  # Must use 0.0.0.0 so ESP32 on same WiFi can reach it                                                                                   
+                                                                                                                                          
+  Find your laptop's IP on the local network:                                                                                             
+  ipconfig getifaddr en0   # Mac WiFi IP e.g. 192.168.1.42                                                                                
+                                                                                                                                          
+  Step 2 — Register the device (run once)                                                                                                 
+                                                                                                                                        
+  curl -X POST "http://192.168.1.42:8000/api/devices/register?device_id=INTAKE_HUB_01&location=Rajasthan%20Field%20Station" \             
+    -H "Admin-Key: herblock-admin-2026"                                                                                                   
+                                         
+  Response:                                                                                                                               
+  {                                                                                                                              
+    "device_id": "INTAKE_HUB_01",        
+    "api_key": "hb-device-a1b2c3d4e5f6...",                                                                                               
+    "note": "Flash this key into the ESP32 firmware."
+  }                                                                                                                                       
+  Copy that api_key — you need it in the ESP32 firmware.                                                                                  
+                                                                                                                                          
+  Step 3 — Test the endpoint manually (before touching ESP32)                                                                             
+                                                                                                                                          
+  curl -X POST "http://192.168.1.42:8000/api/intake" \                                                                                    
+    -H "Content-Type: application/json" \                                                                                                 
+    -H "X-Device-Key: hb-device-a1b2c3d4e5f6..." \                                                                               
+    -d '{                                                                                                                                 
+      "device_id": "INTAKE_HUB_01",
+      "herb_type": "Ashwagandha",                                                                                                         
+      "weight_grams": 245.3,                                                                                                     
+      "moisture_percent": 12.4,                                                                                                           
+      "latitude": 26.45,                                                                                                         
+      "longitude": 74.63,                                                                                                                 
+      "collector_id": "COL-001"                                                                                                           
+    }'                                   
+                                                                                                                                          
+  Expected response:                                                                                                             
+  {                                      
+    "status": "accepted",
+    "batch_id": "ASH-20260416-A1B2C3",                                                                                                    
+    "tx_id": "sha256hash...",         
+    "trace_url": "http://localhost:3000/trace/ASH-20260416-A1B2C3"                                                                        
+  }                                                                                                                                       
+                                                                                                                                          
+  Step 4 — ESP32 Arduino firmware skeleton                                                                                                
+                                                                                                                                          
+  Flash this into the ESP32 (Arduino IDE). Replace the 3 values at the top:                                                               
+                                                                                                                                          
+  #include <WiFi.h>                                                                                                                       
+  #include <HTTPClient.h>                                                                                                                 
+  #include <ArduinoJson.h>               
+                                                                                                                                          
+  // ── CONFIG ── change these three lines only ──────────────────────                                                                    
+  const char* WIFI_SSID     = "YourWiFiName";
+  const char* WIFI_PASSWORD = "YourWiFiPassword";                                                                                         
+  const char* SERVER_IP     = "192.168.1.42";       // your laptop IP                                                            
+  const char* DEVICE_KEY    = "hb-device-a1b2c3..."; // from Step 2                                                                       
+  // ─────────────────────────────────────────────────────────────────                                                                    
+                                                                                                                                          
+  #define LED_GREEN 2                                                                                                                     
+  #define LED_RED   4                                                                                                            
+                                                                                                                                          
+  void setup() {                                                                                                                 
+    Serial.begin(115200);                
+    pinMode(LED_GREEN, OUTPUT);                                                                                                           
+    pinMode(LED_RED, OUTPUT);
+                                                                                                                                          
+    WiFi.begin(WIFI_SSID, WIFI_PASSWORD);                                                                                        
+    Serial.print("Connecting to WiFi");  
+    while (WiFi.status() != WL_CONNECTED) {                                                                                               
+      delay(500); Serial.print(".");
+    }                                                                                                                                     
+    Serial.println("\nConnected: " + WiFi.localIP().toString());                                                                          
+  }                                      
+                                                                                                                                          
+  void sendIntake(float weight_g, float moisture, float lat, float lon) {                                                                 
+    HTTPClient http;                     
+    String url = "http://" + String(SERVER_IP) + ":8000/api/intake";                                                                      
+    http.begin(url);                                                                                                                      
+    http.addHeader("Content-Type", "application/json");
+    http.addHeader("X-Device-Key", DEVICE_KEY);                                                                                           
+                                                                                                                                          
+    // Build JSON payload                
+    StaticJsonDocument<512> doc;                                                                                                          
+    doc["device_id"]       = "INTAKE_HUB_01";                                                                                             
+    doc["herb_type"]       = "Ashwagandha";   // change per herb
+    doc["weight_grams"]    = weight_g;                                                                                                    
+    doc["moisture_percent"]= moisture;                                                                                           
+    doc["latitude"]        = lat;                                                                                                         
+    doc["longitude"]       = lon;                                                                                                         
+    doc["collector_id"]    = "COL-001";  
+                                                                                                                                          
+    String body;                                                                                                                 
+    serializeJson(doc, body);            
+
+    int code = http.POST(body);                                                                                                           
+    if (code == 200) {
+      String response = http.getString();                                                                                                 
+      StaticJsonDocument<512> res;                                                                                               
+      deserializeJson(res, response);                                                                                                     
+   
+      String status = res["status"];                                                                                                      
+      if (status == "accepted") {                                                                                                
+        String batch_id = res["batch_id"];
+        Serial.println("ACCEPTED: " + batch_id);                                                                                          
+        // OLED: show batch_id
+        // Green LED on                                                                                                                   
+        digitalWrite(LED_GREEN, HIGH);                                                                                           
+        delay(3000);                                                                                                                      
+        digitalWrite(LED_GREEN, LOW);                                                                                                     
+      } else {                           
+        String reason = res["reason"];                                                                                                    
+        Serial.println("REJECTED: " + reason);                                                                                   
+        // OLED: show reason             
+        digitalWrite(LED_RED, HIGH);
+        delay(3000);                                                                                                                      
+        digitalWrite(LED_RED, LOW);
+      }                                                                                                                                   
+    } else {                                                                                                                     
+      Serial.println("HTTP Error: " + String(code));
+    }                                                                                                                                     
+    http.end();
+  }                                                                                                                                       
+                                                                                                                                 
+  void loop() {                          
+    // For demo: send test reading every time button pressed
+    // Replace with real sensor reads:                                                                                                    
+    float weight   = 245.3;   // from HX711                                                                                               
+    float moisture = 12.4;    // from analog sensor                                                                                       
+    float lat      = 26.45;   // from Neo-6M GPS                                                                                          
+    float lon      = 74.63;   // from Neo-6M GPS                                                                                          
+                                                                                                                                 
+    sendIntake(weight, moisture, lat, lon);                                                                                               
+    delay(10000); // 10 sec between readings                                                                                     
+  }                                                                                                                                       
+   
+  Step 5 — Libraries to install in Arduino IDE                                                                                            
+                                                                                                                                 
+  Go to Sketch → Include Library → Manage Libraries, install:                                                                             
+  - ArduinoJson by Benoit Blanchon                                                                                               
+  - WiFi (built-in for ESP32)                                                                                                             
+  - HTTPClient (built-in for ESP32)
+  - Adafruit SSD1306 + Adafruit GFX (for OLED)                                                                                            
+                                                                                                                                 
+  Board: ESP32S3 Dev Module in Board Manager                                                                                              
+                                                                                                                                          
+  ---                                                                                                                                     
+  Important Note for Demo                                                                                                                 
+                                                                                                                                          
+  DEMO_MODE=true is set in .env — this means season validation runs but never blocks (so Ashwagandha works in April). The validation
+  result is still shown in the response for judges to see. Remove it before real-world production use.                                    
+                                                                                                                                 
+                                                                                  
+                                                                                                                                          
