@@ -301,7 +301,7 @@ const TraceProduct = ({ productId }) => {
             <CardContent className="p-0 text-center">
               <div className="bg-white p-4 rounded-xl shadow-lg border-2 border-emerald-200">
                 <QRCodeSVG 
-                  value={`https://sih-blockchain.vercel.app/trace/${product.id}`}
+                  value={`${window.location.origin}/trace/${product.id}`}
                   size={180}
                   bgColor="#ffffff"
                   fgColor="#047857"
@@ -317,7 +317,7 @@ const TraceProduct = ({ productId }) => {
               </div>
               <p className="text-xs text-emerald-600 mt-3 font-semibold">🔒 Blockchain Verified</p>
               <p className="text-xs text-gray-500 mt-1 font-mono bg-gray-100 px-2 py-1 rounded">{product.id}</p>
-              <p className="text-xs text-gray-400 mt-2">sih-blockchain.vercel.app</p>
+              <p className="text-xs text-gray-400 mt-2">{window.location.hostname}</p>
             </CardContent>
           </Card>
         </div>

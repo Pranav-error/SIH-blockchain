@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: herblock-backend
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirement.txt
+    startCommand: uvicorn server:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: MONGO_URL
+        sync: false
+      - key: DB_NAME
+        value: herblock
+      - key: FRONTEND_URL
+        value: https://sih-blockchain.vercel.app
+      - key: DEMO_MODE
+        value: "true"
+      - key: ADMIN_KEY
+        value: herblock-admin-2026
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false

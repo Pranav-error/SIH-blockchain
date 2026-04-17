@@ -1333,6 +1333,24 @@ A common question. Here is the direct comparison:
 
 ---
 
+### Q: You're revealing herb source GPS locations — competitors can go copy your sources. How will companies accept this?
+> "Great question — and this is exactly why we use Hyperledger Fabric's permissioned architecture with private data collections.
+>
+> Consumers only see a zone name — 'Collected in Rajasthan, India.' The exact GPS coordinates are visible only to the company and authorized regulators, not to competitors or the public.
+>
+> And even if a competitor somehow knew the GPS location — they'd still need the land rights, the farmer contracts, and the certified collector relationships. What the blockchain actually does is timestamp YOUR company's sourcing. That timestamp is your competitive moat. You can prove 'we've sourced from this zone for 5 years.' A competitor who shows up today cannot claim that history.
+>
+> Without traceability, a competitor can reverse-engineer your product and claim the same source with no proof. HerBlock means your source is timestamped, signed, and yours."
+
+### Q: Companies already have government AYUSH/FSSAI certification. What is the use of your idea?
+> "Government certification certifies the company's facility — it's issued once and doesn't track where each specific batch came from.
+>
+> Here's the key difference: a company gets certified once, but they ship thousands of batches per year. That certification doesn't tell a consumer whether *this* bottle of Ashwagandha capsules came from a certified Rajasthan farm or a cheap import substituted mid-supply-chain.
+>
+> The proof is in the numbers — Patanjali, Dabur, and other certified companies were still caught selling adulterated products. Certification didn't stop that. Batch-level blockchain traceability would have.
+>
+> Think of it this way: a restaurant has a health inspection certificate. That doesn't tell you whether today's food is fresh. HerBlock is the freshness stamp on every single batch — scannable by any consumer, verified on an immutable ledger."
+
 ### Q: What's the next step after CMTI?
 > "Complete the hardware demo — that's this hackathon.
 > Run a pilot with 10 collectors across one herb zone with Himalaya.

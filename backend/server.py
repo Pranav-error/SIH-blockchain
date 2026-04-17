@@ -224,8 +224,8 @@ def validate_gps_geofence(latitude: float, longitude: float, species: str) -> di
     HERB_ZONES = {
         "Ashwagandha": {
             "center": (26.0, 75.0),  # Rajasthan/MP center
-            "max_radius_km": 600,
-            "bounding_box": {"minLat": 20.0, "maxLat": 32.0, "minLng": 70.0, "maxLng": 80.0}
+            "max_radius_km": 1800,   # DEMO: expanded to include Bengaluru for CMTI testing
+            "bounding_box": {"minLat": 8.0, "maxLat": 32.0, "minLng": 70.0, "maxLng": 80.0}
         },
         "Tulsi": {
             "center": (21.5, 82.5),  # Central India
@@ -390,7 +390,29 @@ async def create_product(product: Product, current_user: User = Depends(get_curr
 @api_router.get("/trace/{trace_id}")
 async def trace_product(trace_id: str):
     product = await db.products.find_one({"$or": [{"id": trace_id}, {"batch_id": trace_id}]})
-    if not product: raise HTTPException(status_code=404, detail="Product not found")
+
+    # Hardware intake records don't create a product entry — synthesize one from collection_events
+    if not product:
+        hw_event = await db.collection_events.find_one({"$or": [{"product_id": trace_id}, {"id": trace_id}]})
+        if not hw_event:
+            raise HTTPException(status_code=404, detail="Product not found")
+        product = {
+            "id": trace_id,
+            "batch_id": trace_id,
+            "product_name": hw_event.get("species_name", "Unknown Herb"),
+            "species_name": hw_event.get("species_name", "Unknown Herb"),
+            "manufacturer": "Field Device — " + hw_event.get("collector_name", "CMTI"),
+            "manufacturing_date": hw_event.get("timestamp"),
+            "expiry_date": None,
+            "final_quantity_kg": hw_event.get("quantity_kg", 0),
+            "source": "hardware_device",
+            "device_id": hw_event.get("device_id"),
+            "quality_grade": hw_event.get("quality_grade"),
+            "geo_validated": hw_event.get("geo_validated", False),
+            "blockchain_hash": hw_event.get("blockchain_hash", ""),
+            "timestamp": hw_event.get("timestamp"),
+        }
+
     batch_id_to_search = product.get("batch_id", product.get("id", trace_id))
     collection_events = await db.collection_events.find({"$or": [{"product_id": batch_id_to_search}, {"product_id": trace_id}]}).to_list(1000)
     processing_steps = await db.processing_steps.find({"$or": [{"product_id": batch_id_to_search}, {"product_id": trace_id}]}).to_list(1000)
@@ -657,12 +679,30 @@ async def trace_product_on_blockchain(product_id: str):
         })
         
         if not product:
-            raise HTTPException(status_code=404, detail="Product not found")
-        
+            hw_event = await db.collection_events.find_one({"$or": [{"product_id": product_id}, {"id": product_id}]})
+            if not hw_event:
+                raise HTTPException(status_code=404, detail="Product not found")
+            product = {
+                "id": product_id,
+                "batch_id": product_id,
+                "product_name": hw_event.get("species_name", "Unknown Herb"),
+                "species_name": hw_event.get("species_name", "Unknown Herb"),
+                "manufacturer": "Field Device — " + hw_event.get("collector_name", "CMTI"),
+                "manufacturing_date": hw_event.get("timestamp"),
+                "expiry_date": None,
+                "final_quantity_kg": hw_event.get("quantity_kg", 0),
+                "source": "hardware_device",
+                "device_id": hw_event.get("device_id"),
+                "quality_grade": hw_event.get("quality_grade"),
+                "geo_validated": hw_event.get("geo_validated", False),
+                "blockchain_hash": hw_event.get("blockchain_hash", ""),
+                "timestamp": hw_event.get("timestamp"),
+            }
+
         def clean_mongo_doc(doc):
             if doc and '_id' in doc: del doc['_id']
             return doc
-        
+
         # Get all related events from MongoDB
         batch_id_to_search = product.get("batch_id", product.get("id", product_id))
         collection_events = await db.collection_events.find({"$or": [{"product_id": batch_id_to_search}, {"product_id": product_id}]}).to_list(1000)
