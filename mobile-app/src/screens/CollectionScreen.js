@@ -12,6 +12,7 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
+import { db } from '../database/db';
 import { api } from '../services/api';
 import { useAuthStore } from '../store/authStore';
 import { useSyncStore } from '../store/syncStore';
@@ -125,28 +126,25 @@ export default function CollectionScreen({ navigation }) {
     setSubmitting(true);
 
     if (isOnline) {
-      // Try to submit directly to blockchain
       try {
         const response = await api.submitCollection(collectionData);
-        if (response.success && response.geo_validated) {
+        if (response.success) {
+          // Save to local SQLite as synced so it appears in History
+          await db.saveCollection({ ...collectionData, status: 'synced' });
+          await db.markSynced(collectionData.id, response.txId || response.id);
           Alert.alert(
             '✅ Collection Recorded',
-            'Your collection has been validated and recorded on the blockchain!',
-            [{ text: 'OK', onPress: () => navigation.navigate('Home') }]
-          );
-        } else if (!response.geo_validated) {
-          Alert.alert(
-            '❌ GPS Validation Failed',
-            'The location is outside approved collection zones for this species. Collection rejected by blockchain.',
+            'Validated and recorded on the blockchain!',
+            [{ text: 'View History', onPress: () => navigation.navigate('History') }]
           );
         }
       } catch (error) {
-        // If API fails, save locally
+        // API failed — save locally for later sync
         addPendingCollection(collectionData);
         Alert.alert(
-          '⏳ Saved Locally',
+          '⏳ Saved for Sync',
           'Could not reach server. Collection saved and will sync when online.',
-          [{ text: 'OK', onPress: () => navigation.navigate('Home') }]
+          [{ text: 'View Pending', onPress: () => navigation.navigate('Pending') }]
         );
       }
     } else {
@@ -154,8 +152,8 @@ export default function CollectionScreen({ navigation }) {
       addPendingCollection(collectionData);
       Alert.alert(
         '⏳ Saved Offline',
-        'Collection saved locally. It will be validated and synced when you\'re online.',
-        [{ text: 'OK', onPress: () => navigation.navigate('Home') }]
+        'Collection saved locally. Sync when you\'re back online.',
+        [{ text: 'View Pending', onPress: () => navigation.navigate('Pending') }]
       );
     }
 
