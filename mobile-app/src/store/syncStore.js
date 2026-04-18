@@ -24,12 +24,17 @@ export const useSyncStore = create(
         }));
       },
 
-      // Remove a synced/deleted collection
+      // Mark a collection as synced (keeps it in SQLite history)
+      markAsSynced: async (id, txId) => {
+        await db.markSynced(id, txId);
+        set(state => ({
+          pendingCollections: state.pendingCollections.filter(c => c.id !== id),
+        }));
+      },
+
+      // Remove a deleted/discarded collection from SQLite entirely
       removePendingCollection: async (id) => {
-        // Remove from SQLite
         await db.deleteCollection(id);
-        
-        // Update store
         set(state => ({
           pendingCollections: state.pendingCollections.filter(c => c.id !== id),
         }));

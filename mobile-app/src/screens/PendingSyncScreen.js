@@ -14,6 +14,7 @@ import { useSyncStore } from '../store/syncStore';
 
 export default function PendingSyncScreen() {
   const pendingCollections = useSyncStore(state => state.pendingCollections);
+  const markAsSynced = useSyncStore(state => state.markAsSynced);
   const removePendingCollection = useSyncStore(state => state.removePendingCollection);
   const updateCollectionStatus = useSyncStore(state => state.updateCollectionStatus);
   
@@ -32,10 +33,10 @@ export default function PendingSyncScreen() {
       }
 
       const response = await api.submitCollection(collection);
-      
+
       if (response.success && response.geo_validated) {
-        removePendingCollection(collection.id);
-        Alert.alert('✅ Synced', 'Collection validated and recorded on blockchain!');
+        await markAsSynced(collection.id, response.txId || response.id);
+        Alert.alert('✅ Synced', 'Collection recorded on blockchain! View it in History.');
       } else if (!response.geo_validated) {
         updateCollectionStatus(collection.id, 'rejected');
         Alert.alert(
@@ -71,7 +72,7 @@ export default function PendingSyncScreen() {
       try {
         const response = await api.submitCollection(collection);
         if (response.success && response.geo_validated) {
-          removePendingCollection(collection.id);
+          await markAsSynced(collection.id, response.txId || response.id);
           synced++;
         } else if (!response.geo_validated) {
           updateCollectionStatus(collection.id, 'rejected');
