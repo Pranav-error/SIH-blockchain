@@ -338,7 +338,7 @@ const TraceProduct = ({ productId }) => {
                     </div>
                     <p className="text-sm font-medium text-emerald-700">{event.species_name}</p>
                     <p className="text-sm text-gray-600 mb-1">{event.location_name}, {event.district}</p>
-                    <p className="text-sm text-gray-600 mb-1">Quantity: {event.quantity_kg} kg</p>
+                    <p className="text-sm text-gray-600 mb-1">Quantity: {event.quantity_kg || (event.weight_grams ? (event.weight_grams / 1000).toFixed(3) : '—')} kg</p>{event.moisture_percent != null && <p className="text-sm text-gray-600 mb-1">💧 Moisture: {event.moisture_percent}%</p>}{event.weight_grams != null && <p className="text-sm text-gray-600 mb-1">⚖️ Weight: {event.weight_grams} g</p>}
                     <p className="text-sm text-gray-600 mb-1">{event.weather_conditions}</p>
                     {event.organic_certified && <Badge className="bg-green-100 text-green-800 text-xs">Organic</Badge>}
                     <DisplayMap lat={event.latitude} lng={event.longitude} />
