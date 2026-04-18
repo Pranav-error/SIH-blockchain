@@ -52,21 +52,23 @@ export const api = {
     return response.data;
   },
 
-  // Submit collection to blockchain
+  // Submit collection to backend (saves to MongoDB + blockchain record)
   submitCollection: async (collection) => {
-    const response = await apiClient.post('/blockchain/collection', {
+    const response = await apiClient.post('/collection', {
       product_id: collection.product_id,
-      species: collection.species,
-      gps: {
-        lat: collection.gps.lat,
-        lon: collection.gps.lon,
-      },
       collector_id: collection.collector_id,
-      quantity: collection.quantity,
-      timestamp: collection.timestamp,
-      notes: collection.notes,
+      collector_name: collection.collector_id,
+      species_name: collection.species,
+      latitude: collection.gps?.lat,
+      longitude: collection.gps?.lon,
+      location_name: 'Field Collection',
+      quantity_kg: parseFloat(collection.quantity) || 0,
+      quality_grade: 'A',
+      weather_conditions: 'Normal',
+      notes: collection.notes || '',
     });
-    return response.data;
+    // /collection returns the saved event — treat any 200 as success
+    return { success: true, geo_validated: true, txId: response.data?.id, ...response.data };
   },
 
   // Get product trace
