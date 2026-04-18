@@ -169,6 +169,11 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
         token_data = TokenData(username=username)
     except JWTError: raise credentials_exception
     user = await get_user(username=token_data.username)
+    if user is None:
+        # Also accept collector tokens (mobile app — stored in collectors collection)
+        collector = await db.collectors.find_one({"collector_id": token_data.username})
+        if collector:
+            return User(username=collector["collector_id"], organization=collector.get("organization"))
     if user is None: raise credentials_exception
     return user
 

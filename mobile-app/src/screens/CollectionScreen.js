@@ -1,13 +1,14 @@
-import { Picker } from '@react-native-picker/picker';
 import * as Location from 'expo-location';
 import * as Network from 'expo-network';
 import { useEffect, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
+    Platform,
     ScrollView,
     StyleSheet,
     Text,
+    TextInput,
     TouchableOpacity,
     View,
 } from 'react-native';
@@ -175,17 +176,18 @@ export default function CollectionScreen({ navigation }) {
       {/* Species Selection */}
       <View style={styles.section}>
         <Text style={styles.label}>Species *</Text>
-        <View style={styles.pickerContainer}>
-          <Picker
-            selectedValue={species}
-            onValueChange={setSpecies}
-            style={styles.picker}
-          >
-            <Picker.Item label="Select species..." value="" />
-            {Object.keys(SPECIES_DATA).map(s => (
-              <Picker.Item key={s} label={s} value={s} />
-            ))}
-          </Picker>
+        <View style={styles.speciesGrid}>
+          {Object.keys(SPECIES_DATA).map(s => (
+            <TouchableOpacity
+              key={s}
+              style={[styles.speciesChip, species === s && styles.speciesChipSelected]}
+              onPress={() => setSpecies(s)}
+            >
+              <Text style={[styles.speciesChipText, species === s && styles.speciesChipTextSelected]}>
+                {s}
+              </Text>
+            </TouchableOpacity>
+          ))}
         </View>
         {species && (
           <Text style={styles.hint}>
@@ -285,9 +287,6 @@ export default function CollectionScreen({ navigation }) {
   );
 }
 
-// Need to import TextInput
-import { TextInput } from 'react-native';
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -313,15 +312,30 @@ const styles = StyleSheet.create({
     color: '#374151',
     marginBottom: 8,
   },
-  pickerContainer: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    overflow: 'hidden',
+  speciesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
   },
-  picker: {
-    height: 50,
+  speciesChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: '#fff',
+    borderWidth: 1.5,
+    borderColor: '#D1D5DB',
+  },
+  speciesChipSelected: {
+    backgroundColor: '#10B981',
+    borderColor: '#10B981',
+  },
+  speciesChipText: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#374151',
+  },
+  speciesChipTextSelected: {
+    color: '#fff',
   },
   hint: {
     fontSize: 13,

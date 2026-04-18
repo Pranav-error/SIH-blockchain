@@ -1,5 +1,6 @@
 import axios from 'axios';
 import Constants from 'expo-constants';
+import { useAuthStore } from '../store/authStore';
 
 // API base URL - configure in app.json
 const API_URL = Constants.expoConfig?.extra?.apiUrl || 'http://localhost:8000/api';
@@ -16,11 +17,10 @@ const apiClient = axios.create({
 // Request interceptor for auth token
 apiClient.interceptors.request.use(
   (config) => {
-    // Get token from auth store if needed
-    // const token = useAuthStore.getState().token;
-    // if (token) {
-    //   config.headers.Authorization = `Bearer ${token}`;
-    // }
+    const token = useAuthStore.getState().token;
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
     return config;
   },
   (error) => {
@@ -85,6 +85,12 @@ export const api = {
   getApprovedZones: async (species) => {
     const response = await apiClient.get(`/zones/${species}`);
     return response.data;
+  },
+
+  // Get recent hardware intake events (ESP32 submissions)
+  getIntakeEvents: async (limit = 50) => {
+    const response = await apiClient.get(`/intake/events?limit=${limit}`);
+    return response.data.events || [];
   },
 
   // Health check
