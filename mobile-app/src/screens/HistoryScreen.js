@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
+import { useCallback, useEffect, useState } from 'react';
 import {
     ActivityIndicator,
     FlatList,
@@ -14,6 +15,13 @@ export default function HistoryScreen() {
   const [collections, setCollections] = useState([]);
   const [filter, setFilter] = useState('all'); // all, synced, pending, hardware
   const [loading, setLoading] = useState(false);
+
+  // Reload every time this tab is focused (catches new submissions)
+  useFocusEffect(
+    useCallback(() => {
+      loadHistory();
+    }, [filter])
+  );
 
   useEffect(() => {
     loadHistory();
