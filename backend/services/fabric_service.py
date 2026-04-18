@@ -19,7 +19,7 @@ import uuid
 # Base paths
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FABRIC_SAMPLES = os.path.join(BASE_DIR, "fabric-samples")
-HERBLOCK_NETWORK = os.path.join(FABRIC_SAMPLES, "herblock-network")
+HERBLOCK_NETWORK = os.path.join(FABRIC_SAMPLES, "test-network")
 FABRIC_BIN = os.path.join(FABRIC_SAMPLES, "bin")
 FABRIC_CONFIG = os.path.join(FABRIC_SAMPLES, "config")
 

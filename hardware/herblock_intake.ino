@@ -6,7 +6,7 @@
  * the HerBlock backend /api/intake endpoint.
  *
  * GPS is HARDCODED for the CMTI demo (Neo-6M won't lock indoors).
- * Coords 26.45, 74.63 = Rajasthan — valid Ashwagandha zone (600 km radius).
+ * Coords 12.9716, 77.5946 = CMTI Bengaluru — Ashwagandha zone expanded to 1800 km for demo.
  *
  * Hardware team: Harshalykumar + Karanam Nayan
  * Backend by: Pranav (sai pranav)
@@ -22,8 +22,8 @@
 // ─────────────────────────────────────────────
 //  CONFIG — edit before flashing
 // ─────────────────────────────────────────────
-const char* WIFI_SSID    = "YOUR_WIFI_SSID";
-const char* WIFI_PASS    = "YOUR_WIFI_PASSWORD";
+const char* WIFI_SSID    = "CMTI Tp-link";
+const char* WIFI_PASS    = "Cmti@2026";
 
 const char* SERVER_IP    = "192.168.1.100";  // run: ifconfig | grep "inet " on your laptop
 const int   SERVER_PORT  = 8080;
@@ -33,9 +33,9 @@ const char* HERB_TYPE    = "Ashwagandha";    // change per batch
 const char* COLLECTOR_ID = "COL-001";
 
 // GPS — hardcoded (Neo-6M won't lock indoors)
-// 26.45, 74.63 = Rajasthan — passes 600 km Haversine check for Ashwagandha
-const float GPS_LAT = 26.45;
-const float GPS_LON = 74.63;
+// 12.9716, 77.5946 = CMTI Bengaluru — passes Haversine check (zone expanded to 1800 km for demo)
+const float GPS_LAT = 12.9716;
+const float GPS_LON = 77.5946;
 
 // ─────────────────────────────────────────────
 //  PIN DEFINITIONS
@@ -85,7 +85,7 @@ void setup() {
   if (!display.begin(SSD1306_SWITCHCAPVCC, OLED_ADDR)) {
     Serial.println("[OLED] init failed");
   }
-  oledMessage("HerBlock", "Booting...");
+  oledSplash();
 
   // Grade buttons
   pinMode(BTN_GRADE_A, INPUT_PULLUP);
@@ -147,20 +147,7 @@ void loop() {
 
   // Update OLED display
   if (!submitted) {
-    display.clearDisplay();
-    display.setTextSize(1);
-    display.setTextColor(SSD1306_WHITE);
-    display.setCursor(0, 0);
-    display.printf("Herb:  %s\n", HERB_TYPE);
-    display.printf("Wt:    %.1f g\n", weightGrams);
-    display.printf("Moist: %.1f%%\n", moisturePct);
-    display.printf("GPS:   DEMO MODE\n");
-    if (gradeSelected) {
-      display.printf("Grade: %c  [SUBMIT?]\n", gradeSelected);
-    } else {
-      display.println("Press A / B / C");
-    }
-    display.display();
+    oledDashboard();
   }
 
   // Submit once a grade is selected and we haven't submitted yet
@@ -264,6 +251,74 @@ void oledMessage(const char* line1, const char* line2) {
 
 void oledMessage(const char* line1, String line2) {
   oledMessage(line1, line2.c_str());
+}
+
+// Splash screen shown on boot
+void oledSplash() {
+  display.clearDisplay();
+  display.setTextColor(SSD1306_WHITE);
+
+  // Big title
+  display.setTextSize(2);
+  display.setCursor(10, 4);
+  display.println("HerBlock");
+
+  // Divider line
+  display.drawLine(0, 24, 127, 24, SSD1306_WHITE);
+
+  display.setTextSize(1);
+  display.setCursor(4, 28);
+  display.println("Blockchain Herb Trace");
+  display.setCursor(4, 40);
+  display.println("CMTI DIC 2026");
+  display.setCursor(4, 52);
+  display.println("Patent Pending - GPS");
+  display.display();
+  delay(2500);
+}
+
+// Live sensor dashboard shown during normal operation
+void oledDashboard() {
+  display.clearDisplay();
+  display.setTextColor(SSD1306_WHITE);
+
+  // Header bar
+  display.fillRect(0, 0, 128, 10, SSD1306_WHITE);
+  display.setTextSize(1);
+  display.setTextColor(SSD1306_BLACK);
+  display.setCursor(2, 1);
+  display.print("HerBlock  |  ");
+  display.print(HERB_TYPE);
+  display.setTextColor(SSD1306_WHITE);
+
+  // Weight
+  display.setCursor(0, 14);
+  display.print("Wt:");
+  display.setTextSize(2);
+  display.setCursor(22, 11);
+  display.printf("%.0fg", weightGrams);
+  display.setTextSize(1);
+
+  // Moisture
+  display.setCursor(0, 30);
+  display.printf("Moisture: %.1f%%", moisturePct);
+
+  // GPS
+  display.setCursor(0, 40);
+  display.print("GPS: CMTI BLR [OK]");
+
+  // Divider
+  display.drawLine(0, 50, 127, 50, SSD1306_WHITE);
+
+  // Grade / instruction
+  display.setCursor(0, 54);
+  if (gradeSelected) {
+    display.printf("Grade: %c  -> Submitting...", gradeSelected);
+  } else {
+    display.print("Press A=Grade-A  B  C");
+  }
+
+  display.display();
 }
 
 void flashLED(int pin, int times) {

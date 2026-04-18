@@ -8,7 +8,7 @@ import "./app.css";
 // Component Imports
 import { toast, Toaster } from "sonner";
 import { Badge } from "./components/badge";
-import { BlockchainCollection, BlockchainStatus, PatentFeatureBadge } from "./components/BlockchainStatus";
+import { BlockchainCollection, BlockchainStatus, EndorsementPanel, PatentFeatureBadge } from "./components/BlockchainStatus";
 import { Button } from "./components/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./components/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "./components/dialog";
@@ -175,9 +175,10 @@ const Dashboard = () => {
                     </div>
                 </div>
                 
-                {/* Blockchain Status Card */}
+                {/* Blockchain Status + Endorsement */}
                 <div className="mb-6">
                     <BlockchainStatus />
+                    <EndorsementPanel />
                 </div>
                 
                 {analytics && (<div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8"><Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-gray-600">Total Products</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold text-emerald-600">{analytics.statistics.total_products}</div></CardContent></Card><Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-gray-600">Collections</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold text-blue-600">{analytics.statistics.total_collections}</div></CardContent></Card><Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-gray-600">Processing Steps</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold text-purple-600">{analytics.statistics.total_processing}</div></CardContent></Card><Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-gray-600">Quality Tests</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold text-orange-600">{analytics.statistics.total_quality_tests}</div></CardContent></Card><Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-gray-600">Blockchain Txs</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold text-teal-600">{analytics.statistics.total_blockchain_transactions}</div></CardContent></Card></div>)}
@@ -243,7 +244,7 @@ const AddProductDialog = ({ onSuccess }) => {
 const TraceProduct = ({ productId }) => {
   const [traceData, setTraceData] = useState(null); const [loading, setLoading] = useState(true); const [error, setError] = useState(null);
   useEffect(() => { const fetchTraceData = async () => { try { const response = await axios.get(`${API}/blockchain/trace/${productId}`); setTraceData(response.data); } catch (error) { console.error("Trace error:", error); setError(productId.startsWith('COLL-') ? 'collection' : productId.startsWith('PROC-') ? 'processing' : productId.startsWith('QT-') ? 'quality_test' : 'not_found'); toast.error("Product not found"); } finally { setLoading(false); } }; fetchTraceData(); }, [productId]);
-  if (loading) return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="text-center"><QrCode className="w-16 h-16 text-emerald-600 mx-auto mb-4 animate-pulse" /><p className="text-gray-600">Loading blockchain data...</p></div></div>;
+  if (loading) return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="text-center"><QrCode className="w-16 h-16 text-emerald-600 mx-auto mb-4 animate-pulse" /><p className="text-gray-600 font-medium">Loading blockchain data...</p><p className="text-xs text-gray-400 mt-2">First load may take 20–30s while the server wakes up</p><div className="mt-4 w-48 h-1 bg-gray-200 rounded mx-auto overflow-hidden"><div className="h-1 bg-emerald-500 rounded animate-pulse w-full"></div></div></div></div>;
   if (!traceData || !traceData.product) return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
       <div className="text-center max-w-md p-8 bg-white rounded-2xl shadow-lg">
