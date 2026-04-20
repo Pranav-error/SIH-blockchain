@@ -50,7 +50,7 @@
       ]
     ],
     "extra": {
-      "apiUrl": "https://your-backend-url.com/api"
+      "apiUrl": "https://herblock-api.onrender.com/api"
     }
   }
 }
